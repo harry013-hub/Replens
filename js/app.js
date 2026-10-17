@@ -1,18 +1,19 @@
 // RepLens — UI orchestration. Wires camera → pose engine → exercise tracker → UI.
 
-import { Camera, CameraError, cameraSupport, CAMERA_MESSAGES } from './camera.js?v=20261017d';
-import { PoseEngine } from './pose.js?v=20261017d';
-import { ExerciseTracker, EXERCISES, EXERCISE_IDS, measureFrame, validateExerciseThresholds, fromInternal } from './exercises.js?v=20261017d';
-import { STATES } from './counter.js?v=20261017d';
-import { deriveThresholds } from './calibration.js?v=20261017d';
-import { Overlay } from './overlay.js?v=20261017d';
-import { Feedback } from './audio.js?v=20261017d';
-import { Store } from './storage.js?v=20261017d';
-import { SETUP_ILLUSTRATIONS } from './illustrations.js?v=20261017d';
-import { MEDIAPIPE_VERSION } from './config.js?v=20261017d';
-import { Battle, CAMPAIGN, BATTLE_GOALS, INTERVAL_SECONDS, bossMaxHp, shuffle } from './battle.js?v=20261017d';
-import { VoicePlayer } from './voice.js?v=20261017d';
-import { mealsTodayKcal } from './meals-link.js?v=20261017d';
+import { Camera, CameraError, cameraSupport, CAMERA_MESSAGES } from './camera.js?v=20261017e';
+import { PoseEngine } from './pose.js?v=20261017e';
+import { ExerciseTracker, EXERCISES, EXERCISE_IDS, measureFrame, validateExerciseThresholds, fromInternal } from './exercises.js?v=20261017e';
+import { STATES } from './counter.js?v=20261017e';
+import { deriveThresholds } from './calibration.js?v=20261017e';
+import { Overlay } from './overlay.js?v=20261017e';
+import { Feedback } from './audio.js?v=20261017e';
+import { Store } from './storage.js?v=20261017e';
+import { SETUP_ILLUSTRATIONS } from './illustrations.js?v=20261017e';
+import { MEDIAPIPE_VERSION } from './config.js?v=20261017e';
+import { Battle, CAMPAIGN, BATTLE_GOALS, INTERVAL_SECONDS, bossMaxHp, shuffle } from './battle.js?v=20261017e';
+import { VoicePlayer } from './voice.js?v=20261017e';
+import { MusicPlayer } from './music.js?v=20261017e';
+import { mealsTodayKcal } from './meals-link.js?v=20261017e';
 
 const $ = (id) => document.getElementById(id);
 const body = document.body;
@@ -44,6 +45,7 @@ const app = {
 };
 
 const voice = new VoicePlayer();
+const music = new MusicPlayer();
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 // ---------------------------------------------------------------------------
@@ -75,6 +77,8 @@ function toast(msg, ms = 2600) {
 
 function setScreen(name) {
   body.dataset.screen = name;
+  if (name === 'menu') music.play('menu');
+  else if (music.wanted === 'menu') music.stop();
   window.scrollTo(0, 0);
 }
 
@@ -531,6 +535,7 @@ async function resume() {
   requestWakeLock();
   startInference();
   voice.unlock();
+  if (app.battle) { music.unlock(); music.resume(); }
   if (app.battle?.battle.phase === 'interval') { $('paused-overlay').hidden = true; setPauseButton(false); startInterval(); return; }
   runCountdown(3);
 }
@@ -616,8 +621,10 @@ document.addEventListener('visibilitychange', () => {
     fx.suspend();
     voice.stopIdle();
     voice.stopAll();
+    music.pause();
     if (app.calib) cancelCalibration();
   } else {
+    if (music.wanted === 'menu') music.resume();
     if (app.phase === 'setup') {
       if (camera.stream && !camera.active) { camera.stop(); showError(CAMERA_MESSAGES.interrupted + ' Tap Enable Camera to restart it.'); }
       refreshCameraUi();
@@ -635,6 +642,7 @@ window.addEventListener('pagehide', () => {
   fx.stopAll();
   voice.stopIdle();
   voice.stopAll();
+  music.pause();
   releaseWakeLock();
   if (app.phase === 'active' || app.phase === 'countdown' || app.phase === 'interval') {
     // keep the state consistent if the page comes back from the back/forward cache
@@ -697,6 +705,8 @@ function applyFx() {
   voice.enabled = !!prefs.sound;
   voice.volume = Math.min(1, (Number(prefs.volume) || 0) * 1.4);
   if (!voice.enabled) voice.stopAll();
+  music.setVolume(Math.min(1, (Number(prefs.volume) || 0) * 0.55));
+  music.setEnabled(!!prefs.sound);
   fx.enabled = !!prefs.sound;
   fx.volume = Number(prefs.volume) || 0;
   fx.speak = !!prefs.speak;
@@ -925,6 +935,9 @@ pose.forceCpu = !!prefs.forceCpu;
 applyFx();
 renderHome();
 window.addEventListener('hashchange', onRoute);
+const unlockMusic = () => { music.unlock(); window.removeEventListener('pointerdown', unlockMusic, true); window.removeEventListener('keydown', unlockMusic, true); };
+window.addEventListener('pointerdown', unlockMusic, true);
+window.addEventListener('keydown', unlockMusic, true);
 onRoute();
 
 // Show unexpected errors instead of failing silently (helps when testing on a phone).
@@ -932,7 +945,7 @@ window.addEventListener('error', (e) => { if (e.message) toast(`Something went w
 window.addEventListener('unhandledrejection', (e) => { const m = e.reason?.message; if (m) toast(`Something went wrong: ${m}`, 6000); });
 
 // Expose for debugging in the console (no data leaves the device).
-window.RepLens = { app, pose, camera, store, voice };
+window.RepLens = { app, pose, camera, store, voice, music };
 
 // ---------------------------------------------------------------------------
 // Main menu routing (#, #campaign, #replens)
@@ -1112,6 +1125,8 @@ function runBattleCountdown() {
   box.classList.remove('go');
   $('countdown-num').textContent = steps[0];
   voice.play('countdown'); // started inside the Start Battle tap
+  music.unlock();
+  music.play('battle');
   app.countdownTimer = setInterval(() => {
     i += 1;
     if (i >= steps.length) {
@@ -1224,6 +1239,7 @@ function nextBattleWorkout() {
 
 function battlePaused() {
   const b = app.battle;
+  music.pause();
   if (b.intervalTimer) { clearInterval(b.intervalTimer); b.intervalTimer = null; $('interval').hidden = true; }
   voice.stopIdle();
   voice.stopAll();
@@ -1244,6 +1260,7 @@ function victory() {
   $('boss-hit').hidden = true;
   setBossState('defeated');
   renderHp();
+  music.stop();
   // Supplied lines: one of the two death sounds, then clapping, then "Level Up".
   voice.play('death');
   voice.play('clapping', { queue: true });
@@ -1287,6 +1304,7 @@ function endBattleUi() {
   }
   voice.stopIdle();
   voice.stopAll();
+  if (music.wanted === 'battle') music.stop();
   app.battle = null;
   body.classList.remove('battle');
   $('boss-panel').hidden = true;

@@ -16,8 +16,8 @@
 // overhead), so that exercise is marked `invert` and the tracker negates
 // angles and thresholds before feeding the same generic state machine.
 
-import { toPixel, angleDeg, inclinationDeg, dist, TimeSmoother } from './geometry.js?v=20261017d';
-import { RepCounter, STATES, DEFAULT_TIMING, validateThresholds } from './counter.js?v=20261017d';
+import { toPixel, angleDeg, inclinationDeg, dist, TimeSmoother } from './geometry.js?v=20261017e';
+import { RepCounter, STATES, DEFAULT_TIMING, validateThresholds } from './counter.js?v=20261017e';
 
 export const LM = Object.freeze({
   nose: 0,

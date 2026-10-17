@@ -1,7 +1,7 @@
 // Guided calibration: turn a user's own comfortable top and lowered positions
 // into ordered thresholds. Pure logic — unit-tested in tests/.
 
-import { validateThresholds } from './counter.js?v=20261017d';
+import { validateThresholds } from './counter.js?v=20261017e';
 
 export const CALIBRATION = Object.freeze({
   minSamples: 8,

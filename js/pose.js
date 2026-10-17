@@ -2,7 +2,7 @@
 // Knows nothing about reps — it only hands landmark arrays to a callback.
 // All processing happens in this browser tab; frames are never sent anywhere.
 
-import { LIB_SOURCES, MODEL_SOURCES } from './config.js?v=20261017d';
+import { LIB_SOURCES, MODEL_SOURCES } from './config.js?v=20261017e';
 
 export class PoseLoadError extends Error {
   constructor(kind, message, cause) {
