@@ -123,15 +123,32 @@ try:
                 return route.fulfill(status=404, body='{"status":0}', headers={"Access-Control-Allow-Origin": "*"})
             route.fulfill(status=200, body=body, headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"})
         plain_ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        def sal_route(route):
+            off_calls.append({"url": route.request.url, "xua": route.request.headers.get("x-user-agent", "")})
+            url = route.request.url
+            if "kirkland" in url:
+                body = open(os.path.join(FIX, "sal-search-kirkland-pizza.json")).read()
+            elif "pizza" in url:
+                body = '{"hits": [], "count": 0}'
+            else:  # simulate the search service being down -> legacy search fallback
+                return route.fulfill(status=503, body="", headers={"Access-Control-Allow-Origin": "*"})
+            route.fulfill(status=200, body=body, headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"})
         plain_ctx.route("https://world.openfoodfacts.org/**", off_route)
+        plain_ctx.route("https://search.openfoodfacts.org/**", sal_route)
         plain = plain_ctx.new_page()
         plain_errors = []
         plain.on("pageerror", lambda e: plain_errors.append(str(e)))
         plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/search")
-        plain.get_by_role("searchbox").fill("oat")
+        plain.get_by_role("searchbox").fill("costco pizza")
         plain.get_by_role("button", name="Search", exact=True).click()
         expect(plain.get_by_role("heading", name="Open Food Facts")).to_be_visible()
-        check("GitHub Pages mode searches Open Food Facts", plain.get_by_role("button", name=re.compile("^Rolled Oats")).is_visible())
+        check("'costco pizza' finds Kirkland Signature products", plain.get_by_role("button", name=re.compile("^Pepperoni Pizza.*Kirkland Signature")).is_visible())
+        plain.screenshot(path=os.path.join(OUT, "mb-06-costco-pizza.png"), full_page=True)
+        # Search-a-licious is "down" for this query, which exercises the legacy-search fallback
+        plain.get_by_role("searchbox").fill("oat")
+        plain.get_by_role("button", name="Search", exact=True).click()
+        expect(plain.get_by_role("button", name=re.compile("^Rolled Oats"))).to_be_visible()
+        check("GitHub Pages mode searches Open Food Facts", True)
         check("identifying X-User-Agent sent, no key", bool(off_calls) and "RepLens-MealBase" in off_calls[0]["xua"] and "api_key" not in off_calls[0]["url"])
         plain.get_by_role("button", name=re.compile("^Rolled Oats")).click()
         expect(plain.get_by_role("heading", name="Rolled Oats")).to_be_visible()

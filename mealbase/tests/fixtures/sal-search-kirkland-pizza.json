@@ -1,0 +1,22 @@
+{
+  "hits": [
+    {
+      "code": "0096619000000",
+      "product_name": "Pepperoni Pizza",
+      "product_name_en": "Pepperoni Pizza",
+      "brands": ["kirkland-signature"],
+      "product_quantity_unit": "g",
+      "serving_quantity": 132,
+      "serving_quantity_unit": "g",
+      "serving_size": "1/6 pizza (132 g)",
+      "nutriments": { "energy-kcal_100g": 268, "proteins_100g": 12.1, "carbohydrates_100g": 28.8, "fat_100g": 11.4 }
+    }
+  ],
+  "page": 1,
+  "page_size": 24,
+  "page_count": 1,
+  "took": 12,
+  "timed_out": false,
+  "count": 1,
+  "is_count_exact": true
+}

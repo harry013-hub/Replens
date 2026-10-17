@@ -18,7 +18,7 @@ RepLens now has a second tab, **MealBase**. Use the **RepLens | MealBase** switc
 
 Food search works on any host, including **GitHub Pages**, with nothing to set up:
 
-- **GitHub Pages / any static host:** MealBase searches **[Open Food Facts](https://world.openfoodfacts.org)** directly from your browser. It's a free, community-made database (no key needed), strongest for packaged and branded foods, and limited to about 10 searches a minute. Plain foods like fruit or raw meat are covered by the bundled generic foods list, and **Add manually** always works.
+- **GitHub Pages / any static host:** MealBase searches **[Open Food Facts](https://world.openfoodfacts.org)** directly from your browser. It's a free, community-made database of about 3 million products worldwide (no key needed). Store names are matched to their house brands, so "costco pizza" also finds Kirkland Signature products. It covers packaged and grocery foods; restaurant and food-court items (like Costco food-court pizza) generally aren't in it. Plain foods like fruit or raw meat are covered by the bundled generic foods list, and **Add manually** always works.
 - **Netlify (optional):** if the site is deployed on Netlify from GitHub with `USDA_API_KEY` set in its environment variables, MealBase uses **USDA FoodData Central** through `netlify/functions/usda.mjs` instead. USDA's API can't be called straight from a web page, which is why it needs that function.
 - **On your computer:** `USDA_API_KEY=your-key npm start` uses USDA through the same function; without a key it uses Open Food Facts.
 
