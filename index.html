@@ -14,22 +14,10 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="preload" href="assets/fonts/Trackfi-Handdrawn.woff" as="font" type="font/woff" crossorigin>
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/fantasy.css">
+  <link rel="stylesheet" href="css/styles.css?v=20261017d">
+  <link rel="stylesheet" href="css/fantasy.css?v=20261017d">
 </head>
 <body data-screen="menu">
-  <!-- Hand-drawn wobble used for sketchy borders (applied to borders only, never to text or video). -->
-  <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
-    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="rough-strong" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </svg>
   <noscript><p class="noscript">RepLens needs JavaScript to run.</p></noscript>
 
   <!-- ============ MAIN MENU ============ -->
@@ -107,6 +95,11 @@
     <p class="lede">Prop up your phone, pick an exercise, and RepLens counts your reps with the camera.</p>
 
     <div id="env-warning" class="notice notice-warn" hidden></div>
+
+    <a class="plaque plaque-red plaque-block boss-link" href="#campaign">
+      <svg class="plaque-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 27 L19 13 M17 9 L23 15 M21 5 L27 11 L25 13 L19 7 Z M8 24 L6 22 M4 28 L8 24" /></svg>
+      <span>Boss battle: Skelesquat</span>
+    </a>
 
     <a id="meals-today" class="card meals-today" href="meals/" hidden>
       <span class="small muted">Food logged today</span>
@@ -445,7 +438,34 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="js/app.js"></script>
-  <script type="module" src="js/meals-link.js"></script>
+  <!-- If the app script fails to start (old cached files, very old browser), say so instead of showing dead buttons. -->
+  <div id="boot-fail" class="boot-fail" role="alert" hidden>
+    <div class="boot-card">
+      <p class="boot-title">Tracker-Fit didn't finish loading</p>
+      <p>This usually means an old copy of the site is cached. Reloading fetches the latest version.</p>
+      <p id="boot-detail" class="boot-detail"></p>
+      <button type="button" id="boot-reload" class="plaque plaque-gold plaque-block">Reload</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var errs = [];
+      window.addEventListener('error', function (e) {
+        errs.push(e.message || (e.target && (e.target.src || e.target.href)) || 'load error');
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) { errs.push(String(e.reason && e.reason.message || e.reason)); });
+      setTimeout(function () {
+        if (window.RepLens) return;
+        var box = document.getElementById('boot-fail');
+        document.getElementById('boot-detail').textContent = errs.slice(0, 3).join(' · ');
+        box.hidden = false;
+        document.getElementById('boot-reload').onclick = function () {
+          location.replace(location.pathname + '?r=' + Date.now() + location.hash);
+        };
+      }, 7000);
+    })();
+  </script>
+  <script type="module" src="js/app.js?v=20261017d"></script>
+  <script type="module" src="js/meals-link.js?v=20261017d"></script>
 </body>
 </html>

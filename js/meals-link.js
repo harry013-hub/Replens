@@ -20,7 +20,8 @@ export function mealsTodayKcal(storage) {
   if (!state || state.version !== 1 || !Array.isArray(state.logs)) return null;
   let tz = 'UTC';
   try { tz = state.profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { /* keep UTC */ }
-  const today = localDate(tz);
+  let today;
+  try { today = localDate(tz); } catch { today = localDate('UTC'); }
   const entries = state.logs.filter((l) => l.localDate === today);
   const known = entries.filter((l) => typeof l.nutrition?.calories === 'number');
   return { entries: entries.length, kcal: known.reduce((s, l) => s + l.nutrition.calories, 0) };

@@ -6,9 +6,17 @@
    and gold chamfered plaques, parchment panels, wooden signs, ribbons.
    ========================================================================== */
 
+/* Fonts (SIL Open Font License), self-contained woff2 files via jsDelivr/Fontsource:
+   Patrick Hand SC — hand-lettered small caps for buttons, labels and numbers;
+   Almendra SC — medieval small caps for big titles. */
 @font-face {
-  font-family: "Trackfi Handdrawn";
-  src: url("../assets/fonts/Trackfi-Handdrawn.woff") format("woff");
+  font-family: "Patrick Hand SC";
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/patrick-hand-sc@5.3.0/files/patrick-hand-sc-latin-400-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Almendra SC";
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/almendra-sc@5.3.0/files/almendra-sc-latin-400-normal.woff2") format("woff2");
   font-display: swap;
 }
 
@@ -45,19 +53,20 @@
   --warn: var(--gold);
   --danger: var(--red);
 
-  --font-title: "Trackfi Handdrawn", "Marker Felt", "Chalkboard SE", "Comic Sans MS", ui-rounded, system-ui, sans-serif;
+  --font-title: "Patrick Hand SC", "Marker Felt", "Chalkboard SE", ui-rounded, system-ui, sans-serif;
+  --font-display: "Almendra SC", "Patrick Hand SC", Georgia, serif;
   --font: ui-rounded, "SF Pro Rounded", "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  --plaque-dark: url("../assets/fantasy/ui/plaque-dark.svg");
-  --plaque-gold: url("../assets/fantasy/ui/plaque-gold.svg");
-  --plaque-red: url("../assets/fantasy/ui/plaque-red.svg");
-  --parchment: url("../assets/fantasy/ui/parchment.svg");
-  --wood-img: url("../assets/fantasy/ui/wood.svg");
-  --ribbon: url("../assets/fantasy/ui/ribbon.svg");
-  --grain: url("../assets/fantasy/ui/grain.svg");
-  --hatch-sky: url("../assets/fantasy/ui/hatch-sky.svg");
-  --hatch-paper: url("../assets/fantasy/ui/hatch-paper.svg");
-  --hatch-dark: url("../assets/fantasy/ui/hatch-dark.svg");
+  --plaque-dark: url("../assets/fantasy/ui/plaque-dark.webp");
+  --plaque-gold: url("../assets/fantasy/ui/plaque-gold.webp");
+  --plaque-red: url("../assets/fantasy/ui/plaque-red.webp");
+  --parchment: url("../assets/fantasy/ui/parchment.webp");
+  --wood-img: url("../assets/fantasy/ui/wood.webp");
+  --ribbon: url("../assets/fantasy/ui/ribbon.webp");
+  --grain: url("../assets/fantasy/ui/grain.webp");
+  --hatch-sky: url("../assets/fantasy/ui/hatch-sky.webp");
+  --hatch-paper: url("../assets/fantasy/ui/hatch-paper.webp");
+  --hatch-dark: url("../assets/fantasy/ui/hatch-dark.webp");
   color-scheme: light;
 }
 
@@ -70,7 +79,7 @@ body {
   background:
     var(--grain),
     var(--hatch-sky),
-    linear-gradient(180deg, #a9d3f1 0%, #cfe6f2 30%, #eef0dc 62%, #ecdcb5 100%) fixed;
+    linear-gradient(180deg, #a9d3f1 0%, #cfe6f2 30%, #eef0dc 62%, #ecdcb5 100%);
   background-color: #e9dcbc;
 }
 
@@ -85,6 +94,8 @@ h1, h2, h3, .section-title, .page-title, .btn, .plaque, .ex-name, .stepper outpu
   letter-spacing: -.01em;
 }
 .menu-foot, .lede { font-family: var(--font); letter-spacing: 0; }
+.page-title, .boss-title, .boss-name, .victory-title, .interval-title, .paused-title, .ribbon, .boss-level,
+.sheet-body h2, .brand h1, .section-title, .summary-ex { font-family: var(--font-display); letter-spacing: .01em; }
 .muted, .muted-ink { color: var(--muted); }
 a { color: var(--ink); }
 
@@ -96,7 +107,7 @@ a { color: var(--ink); }
   text-decoration: none;
   font-size: 1.2rem; line-height: 1.1;
   border-style: solid; border-width: 13px 16px; border-radius: 0;
-  border-image: var(--plaque-dark) 14 16 fill / 13px 16px stretch;
+  border-image: var(--plaque-dark) 28 32 fill / 13px 16px stretch;
   background: none;
   text-shadow: 0 2px 0 rgba(0,0,0,.45);
   transition: transform .1s ease, filter .15s ease;
@@ -109,11 +120,12 @@ a { color: var(--ink); }
 .plaque > span, .btn > span { position: relative; top: 1px; }
 
 .plaque-gold, .btn-primary {
-  border-image: var(--plaque-gold) 14 16 fill / 13px 16px stretch;
+  border-image: var(--plaque-gold) 28 32 fill / 13px 16px stretch;
   color: var(--gold-ink);
   text-shadow: 0 1px 0 rgba(255,244,200,.7);
 }
-.btn-danger { border-image: var(--plaque-red) 14 16 fill / 13px 16px stretch; color: var(--cream); }
+.plaque-red { border-image: var(--plaque-red) 28 32 fill / 13px 16px stretch; color: var(--cream); }
+.btn-danger { border-image: var(--plaque-red) 28 32 fill / 13px 16px stretch; color: var(--cream); }
 .btn-secondary, .btn-ghost { color: var(--cream); }
 .btn-ghost { filter: saturate(.85); }
 
@@ -129,7 +141,7 @@ a { color: var(--ink); }
   min-width: 50px; min-height: 50px; padding: 0 6px;
   border-radius: 0; background: none;
   border-style: solid; border-width: 11px 12px;
-  border-image: var(--plaque-dark) 14 16 fill / 11px 12px stretch;
+  border-image: var(--plaque-dark) 28 32 fill / 11px 12px stretch;
   color: var(--cream);
   font-family: var(--font-title);
 }
@@ -142,7 +154,7 @@ a { color: var(--ink); }
 .parchment, .card, .exercise-card, .sheet-body, .notice, .summary-meta div, .victory-card {
   position: relative;
   border-style: solid; border-width: 26px; border-radius: 0;
-  border-image: var(--parchment) 34 fill / 26px stretch;
+  border-image: var(--parchment) 68 fill / 26px stretch;
   background: none;
   color: var(--ink);
   box-shadow: none;
@@ -157,7 +169,7 @@ a { color: var(--ink); }
   font-size: clamp(1.9rem, 7vw, 2.6rem); color: var(--cream);
   padding: 6px 18px;
   border-style: solid; border-width: 16px 20px;
-  border-image: var(--wood-img) 22 24 fill / 16px 20px stretch;
+  border-image: var(--wood-img) 44 48 fill / 16px 20px stretch;
   text-shadow: 0 3px 0 rgba(36,21,10,.7);
   transform: rotate(-1deg);
 }
@@ -186,7 +198,7 @@ body[data-screen="campaign"] #screen-campaign { display: block; }
 .menu-buttons { display: flex; flex-direction: column; gap: 10px; width: min(420px, 100%); }
 .menu-buttons .plaque { justify-content: flex-start; padding-left: 26px; }
 .menu-buttons .plaque-small { align-self: center; justify-content: center; padding-left: 14px; }
-.menu-foot { margin: 6px 0 0; text-align: center; font-size: .9rem; color: var(--ink); max-width: 36ch; padding: 0 4px; border: solid; border-width: 16px; border-image: var(--parchment) 34 fill / 16px stretch; }
+.menu-foot { margin: 6px 0 0; text-align: center; font-size: .9rem; color: var(--ink); max-width: 36ch; padding: 0 4px; border: solid; border-width: 16px; border-image: var(--parchment) 68 fill / 16px stretch; }
 .screen-menu { display: none; }
 body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-content: center; }
 
@@ -230,7 +242,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 
 /* ---------- RepLens home (restyled) ---------- */
 .screen-scroll > * + * { margin-top: 16px; }
-.lede { color: var(--ink); font-size: 1.05rem; padding: 0 4px; border: solid; border-width: 18px; border-image: var(--parchment) 34 fill / 18px stretch; }
+.lede { color: var(--ink); font-size: 1.05rem; padding: 0 4px; border: solid; border-width: 18px; border-image: var(--parchment) 68 fill / 18px stretch; }
 .section-title { font-size: 1.3rem; color: var(--ink); }
 .exercise-grid { gap: 10px; }
 .exercise-card {
@@ -239,7 +251,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 }
 .exercise-card[aria-checked="true"] {
   background: none;
-  border-image: var(--parchment) 34 fill / 26px stretch;
+  border-image: var(--parchment) 68 fill / 26px stretch;
   filter: drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 6px rgba(244,197,65,.95));
   transform: rotate(-.6deg);
 }
@@ -305,7 +317,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .hud { background: linear-gradient(180deg, rgba(31,24,20,.55) 0%, rgba(31,24,20,0) 36%, rgba(31,24,20,0) 70%, rgba(31,24,20,.45) 100%); }
 .hud-pill {
   background: none; color: var(--cream); font-size: 1.05rem;
-  border-style: solid; border-width: 9px 11px; border-image: var(--plaque-dark) 14 16 fill / 9px 11px stretch;
+  border-style: solid; border-width: 9px 11px; border-image: var(--plaque-dark) 28 32 fill / 9px 11px stretch;
   border-radius: 0; padding: 0 4px;
 }
 .hud-pill svg { color: var(--gold); }
@@ -331,13 +343,13 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 
 .track-chip {
   background: none; border-radius: 0;
-  border: solid; border-width: 10px 12px; border-image: var(--plaque-dark) 14 16 fill / 10px 12px stretch;
+  border: solid; border-width: 10px 12px; border-image: var(--plaque-dark) 28 32 fill / 10px 12px stretch;
   padding: 0 4px; font-size: 1.05rem;
 }
 .track-icon { border: 2px solid var(--ink); }
 .guidance {
   color: var(--ink); background: none; border-radius: 0;
-  border: solid; border-width: 18px; border-image: var(--parchment) 34 fill / 18px stretch;
+  border: solid; border-width: 18px; border-image: var(--parchment) 68 fill / 18px stretch;
   padding: 0 6px; font-size: clamp(1.05rem, 4.2vmin, 1.5rem);
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
@@ -370,7 +382,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .th-grid input { background: var(--cream); border: 2px solid var(--ink); color: var(--ink); border-radius: 6px; }
 .toast {
   background: none; color: var(--cream); font-size: 1.1rem;
-  border: solid; border-width: 12px 15px; border-image: var(--plaque-dark) 14 16 fill / 12px 15px stretch;
+  border: solid; border-width: 12px 15px; border-image: var(--plaque-dark) 28 32 fill / 12px 15px stretch;
   border-radius: 0; box-shadow: none; padding: 0 6px;
 }
 .summary-card { text-align: center; }
@@ -381,7 +393,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .summary-meta dd { color: var(--ink); }
 .correct-box { border-top: 2px dashed rgba(42,29,18,.3); }
 .brand h1, .brand-small h1 { font-family: var(--font-title); color: var(--ink); }
-#screen-summary .brand h1 { display: inline-block; color: var(--cream); padding: 4px 16px; border: solid; border-width: 16px 20px; border-image: var(--wood-img) 22 24 fill / 16px 20px stretch; text-shadow: 0 3px 0 rgba(36,21,10,.7); }
+#screen-summary .brand h1 { display: inline-block; color: var(--cream); padding: 4px 16px; border: solid; border-width: 16px 20px; border-image: var(--wood-img) 44 48 fill / 16px 20px stretch; text-shadow: 0 3px 0 rgba(36,21,10,.7); }
 
 /* ==========================================================================
    Skelesquat battle
@@ -397,14 +409,14 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .boss-head { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
 .boss-name {
   margin: 0; font-size: clamp(1.5rem, 3.4vw, 2.3rem); color: var(--cream);
-  padding: 2px 14px; border: solid; border-width: 13px 16px; border-image: var(--wood-img) 22 24 fill / 13px 16px stretch;
+  padding: 2px 14px; border: solid; border-width: 13px 16px; border-image: var(--wood-img) 44 48 fill / 13px 16px stretch;
   text-shadow: 0 3px 0 rgba(36,21,10,.7);
 }
 .boss-level { font-family: var(--font-title); font-size: 1rem; padding: 6px 26px 10px; background: var(--ribbon) center / 100% 100% no-repeat; white-space: nowrap; }
 
 .hp-bar {
   position: relative; width: min(100%, 420px); height: 34px; flex: none;
-  border: solid; border-width: 9px 11px; border-image: var(--plaque-dark) 14 16 fill / 9px 11px stretch;
+  border: solid; border-width: 9px 11px; border-image: var(--plaque-dark) 28 32 fill / 9px 11px stretch;
 }
 .hp-fill {
   position: absolute; left: 0; top: 0; bottom: 0; width: 100%;
@@ -454,7 +466,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 
 /* battle setup info inside the setup panel */
 .battle-setup {
-  border: solid; border-width: 22px; border-image: var(--parchment) 34 fill / 22px stretch; padding: 0 2px;
+  border: solid; border-width: 22px; border-image: var(--parchment) 68 fill / 22px stretch; padding: 0 2px;
 }
 .battle-setup > * { margin: 0 0 6px; }
 .battle-hp-line { font-family: var(--font-title); font-size: 1.2rem; }
@@ -465,7 +477,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .trial-strip { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; order: -1; width: 100%; }
 .trial-strip li {
   display: flex; align-items: center; gap: 6px; padding: 0 4px;
-  border: solid; border-width: 10px 12px; border-image: var(--parchment) 34 fill / 10px 12px stretch;
+  border: solid; border-width: 10px 12px; border-image: var(--parchment) 68 fill / 10px 12px stretch;
   color: var(--ink); font-size: .95rem;
 }
 .trial-strip li::before { width: 16px; height: 16px; border-width: 2px; }
@@ -486,7 +498,7 @@ body[data-screen="menu"] .menu-inner { min-height: calc(100dvh - 40px); justify-
 .interval-next strong { color: var(--gold); font-weight: 400; }
 .interval-tip {
   max-width: 42ch; margin-top: 8px !important; color: var(--ink); font-size: .95rem;
-  border: solid; border-width: 16px; border-image: var(--parchment) 34 fill / 16px stretch; padding: 0 4px;
+  border: solid; border-width: 16px; border-image: var(--parchment) 68 fill / 16px stretch; padding: 0 4px;
 }
 
 /* victory */
@@ -579,3 +591,9 @@ body.battle .hud-top { padding-right: 170px; }
   body.battle .btn-ctl { min-width: 0; flex: 1 1 90px; padding: 4px 8px; font-size: 1.1rem; }
   body.battle .workout-controls .icon-btn-lg { min-width: 52px; min-height: 56px; }
 }
+
+/* start-up failure notice */
+.boot-fail { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(31,24,20,.75); }
+.boot-card { width: min(420px, 100%); padding: 0 4px; border: solid; border-width: 26px; border-image: var(--parchment) 68 fill / 26px stretch; text-align: center; }
+.boot-title { font-family: var(--font-display); font-size: 1.6rem; margin: 0 0 8px; }
+.boot-detail { font-size: .8rem; color: var(--ink-soft); word-break: break-word; }

@@ -4,9 +4,17 @@
    classes. No MealBase behaviour, data or markup is changed.
    ========================================================================== */
 
+/* Fonts (SIL Open Font License), self-contained woff2 files via jsDelivr/Fontsource:
+   Patrick Hand SC — hand-lettered small caps for buttons, labels and numbers;
+   Almendra SC — medieval small caps for big titles. */
 @font-face {
-  font-family: "Trackfi Handdrawn";
-  src: url("../assets/fonts/Trackfi-Handdrawn.woff") format("woff");
+  font-family: "Patrick Hand SC";
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/patrick-hand-sc@5.3.0/files/patrick-hand-sc-latin-400-normal.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Almendra SC";
+  src: url("https://cdn.jsdelivr.net/npm/@fontsource/almendra-sc@5.3.0/files/almendra-sc-latin-400-normal.woff2") format("woff2");
   font-display: swap;
 }
 
@@ -19,11 +27,11 @@ html body .mb-root[data-theme] {
   --red: #d63c2e;
   --red-2: #9e2219;
   --green: #5aa83c;
-  --font-title: "Trackfi Handdrawn", "Marker Felt", "Chalkboard SE", "Comic Sans MS", ui-rounded, system-ui, sans-serif;
-  --plaque-dark: url("../assets/fantasy/ui/plaque-dark.svg");
-  --plaque-gold: url("../assets/fantasy/ui/plaque-gold.svg");
-  --parchment: url("../assets/fantasy/ui/parchment.svg");
-  --wood-img: url("../assets/fantasy/ui/wood.svg");
+  --font-title: "Patrick Hand SC", "Marker Felt", "Chalkboard SE", ui-rounded, system-ui, sans-serif;
+  --plaque-dark: url("../assets/fantasy/ui/plaque-dark.webp");
+  --plaque-gold: url("../assets/fantasy/ui/plaque-gold.webp");
+  --parchment: url("../assets/fantasy/ui/parchment.webp");
+  --wood-img: url("../assets/fantasy/ui/wood.webp");
 
   --mb-bg: transparent;
   --mb-surface: #f8ecd0;
@@ -56,9 +64,9 @@ html body .mb-root[data-theme] {
 html, body { background: #e9dcbc; }
 body {
   background:
-    url("../assets/fantasy/ui/grain.svg"),
-    url("../assets/fantasy/ui/hatch-sky.svg"),
-    linear-gradient(180deg, #a9d3f1 0%, #cfe6f2 30%, #eef0dc 62%, #ecdcb5 100%) fixed;
+    url("../assets/fantasy/ui/grain.webp"),
+    url("../assets/fantasy/ui/hatch-sky.webp"),
+    linear-gradient(180deg, #a9d3f1 0%, #cfe6f2 30%, #eef0dc 62%, #ecdcb5 100%);
   background-color: #e9dcbc;
 }
 .mb-root { background: transparent; }
@@ -72,6 +80,7 @@ body {
   font-weight: 400;
   letter-spacing: -.01em;
 }
+.mb-root h1, .mb-root h2, .mb-root .mb-nav .mb-brand { font-family: "Almendra SC", "Patrick Hand SC", Georgia, serif; }
 .mb-root h1 { font-size: clamp(1.8rem, 6.5vw, 2.4rem); }
 .mb-root h2 { font-size: 1.45rem; color: var(--red-2); }
 .mb-root h3 { font-size: 1.2rem; }
@@ -82,7 +91,7 @@ body {
   color: var(--cream);
   padding: 2px 16px;
   border: solid; border-width: 14px 18px;
-  border-image: var(--wood-img) 22 24 fill / 14px 18px stretch;
+  border-image: var(--wood-img) 44 48 fill / 14px 18px stretch;
   text-shadow: 0 3px 0 rgba(36,21,10,.7);
   transform: rotate(-1deg);
 }
@@ -91,7 +100,7 @@ body {
 /* parchment panels */
 .mb-root .mb-panel, .mb-root .mb-plan-meal, .mb-dialog, .mb-root .mb-empty {
   border: solid; border-width: 24px; border-radius: 0;
-  border-image: var(--parchment) 34 fill / 24px stretch;
+  border-image: var(--parchment) 68 fill / 24px stretch;
   background: none;
   padding: 0 2px;
   box-shadow: none;
@@ -105,7 +114,7 @@ body {
 .mb-root .mb-btn, .mb-dialog .mb-btn {
   min-height: 52px; padding: 2px 14px;
   border: solid; border-width: 12px 14px; border-radius: 0;
-  border-image: var(--plaque-dark) 14 16 fill / 12px 14px stretch;
+  border-image: var(--plaque-dark) 28 32 fill / 12px 14px stretch;
   background: none; color: var(--cream);
   font-size: 1.05rem;
   text-shadow: 0 2px 0 rgba(0,0,0,.45);
@@ -114,7 +123,7 @@ body {
 .mb-root .mb-btn:hover, .mb-dialog .mb-btn:hover { background: none; filter: brightness(1.08); }
 .mb-root .mb-btn:active { transform: translateY(2px); }
 .mb-root .mb-btn-primary, .mb-dialog .mb-btn-primary {
-  border-image: var(--plaque-gold) 14 16 fill / 12px 14px stretch;
+  border-image: var(--plaque-gold) 28 32 fill / 12px 14px stretch;
   color: var(--gold-ink); text-shadow: 0 1px 0 rgba(255,244,200,.7);
 }
 .mb-root .mb-btn-quiet, .mb-dialog .mb-btn-quiet {
@@ -146,17 +155,17 @@ body {
 .mb-root .mb-switcher { background: none; border: 0; padding: 0; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .mb-root .mb-switcher a {
   min-height: 46px; padding: 0 6px; border-radius: 0; color: var(--cream);
-  border: solid; border-width: 10px 12px; border-image: var(--plaque-dark) 14 16 fill / 10px 12px stretch;
+  border: solid; border-width: 10px 12px; border-image: var(--plaque-dark) 28 32 fill / 10px 12px stretch;
   text-shadow: 0 2px 0 rgba(0,0,0,.45); font-size: 1rem;
 }
 .mb-root .mb-switcher a[aria-current="page"] {
   background: none; color: var(--gold-ink); text-shadow: 0 1px 0 rgba(255,244,200,.7);
-  border-image: var(--plaque-gold) 14 16 fill / 10px 12px stretch;
+  border-image: var(--plaque-gold) 28 32 fill / 10px 12px stretch;
 }
 
 /* bottom / side navigation like the reference's charcoal tab bar */
 .mb-root .mb-nav {
-  background: url("../assets/fantasy/ui/hatch-dark.svg"), linear-gradient(180deg, #4a3829, #2c2119);
+  background: url("../assets/fantasy/ui/hatch-dark.webp"), linear-gradient(180deg, #4a3829, #2c2119);
   border-top: 4px solid #170f0a;
   gap: 4px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
 }
@@ -164,7 +173,7 @@ body {
 .mb-root .mb-nav a svg { color: #f4c541; }
 .mb-root .mb-nav a[aria-current="page"] {
   color: var(--gold-ink); background: none;
-  border: solid; border-width: 8px 9px; border-image: var(--plaque-gold) 14 16 fill / 8px 9px stretch;
+  border: solid; border-width: 8px 9px; border-image: var(--plaque-gold) 28 32 fill / 8px 9px stretch;
 }
 .mb-root .mb-nav a[aria-current="page"] svg { color: var(--gold-ink); }
 @media (min-width: 900px) {
@@ -178,7 +187,7 @@ body {
 .mb-root .mb-day strong { color: var(--ink); font-size: 1.3rem; font-weight: 800; }
 .mb-root .mb-day[aria-pressed="true"] {
   background: none; color: var(--cream);
-  border: solid; border-width: 8px 9px; border-image: var(--plaque-dark) 14 16 fill / 8px 9px stretch;
+  border: solid; border-width: 8px 9px; border-image: var(--plaque-dark) 28 32 fill / 8px 9px stretch;
 }
 .mb-root .mb-day[aria-pressed="true"] strong { color: var(--cream); }
 
@@ -199,7 +208,7 @@ body {
 .mb-root .mb-badge { border: 1.5px solid var(--ink); }
 .mb-toast {
   background: none; color: var(--cream); border-radius: 0;
-  border: solid; border-width: 12px 15px; border-image: var(--plaque-dark) 14 16 fill / 12px 15px stretch;
+  border: solid; border-width: 12px 15px; border-image: var(--plaque-dark) 28 32 fill / 12px 15px stretch;
   font-family: var(--font-title); font-size: 1.05rem;
 }
 .mb-root .mb-spinner { border-color: rgba(42,29,18,.2); border-top-color: var(--red-2); }

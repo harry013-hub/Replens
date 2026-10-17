@@ -1,6 +1,6 @@
 // Camera access: video only, opened only from a user tap, fully released on stop.
 
-import { CAMERA } from './config.js';
+import { CAMERA } from './config.js?v=20261017d';
 
 export class CameraError extends Error {
   constructor(kind, message, cause) {

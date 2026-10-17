@@ -338,7 +338,9 @@ def main():
         check("menu has Campaign, RepLens and MealBase", all(page.is_visible(s) for s in ["#menu-campaign", "#menu-replens", "#menu-mealbase"]))
         check("main menu: no horizontal scroll", no_hscroll(page))
         check("main menu: tap targets >= 44px", not small_targets(page), json.dumps(small_targets(page)))
-        check("supplied heading font loads", page.evaluate("document.fonts.check('20px \"Trackfi Handdrawn\"')"))
+        fams = page.evaluate("[...document.fonts].map(f => f.family.replace(/\"/g, ''))")
+        check("hand-drawn web fonts declared (Patrick Hand SC, Almendra SC)", "Patrick Hand SC" in fams and "Almendra SC" in fams, str(fams))
+        check("all local scripts and styles are version-stamped (no stale cache mixes)", page.evaluate("[...document.querySelectorAll('script[src], link[rel=stylesheet]')].every(e => /[?]v=/.test(e.getAttribute('src') || e.getAttribute('href')))"))
         page.click("#menu-campaign"); page.wait_for_timeout(300)
         check("Campaign shows Level 1 and Skelesquat", "Level 1" in page.inner_text("#camp-level") and page.is_visible("#camp-sprite"))
         check("no meals logged → base HP 100", page.inner_text("#camp-hp") == "100")
@@ -348,6 +350,17 @@ def main():
         page.click("#menu-replens"); page.wait_for_timeout(200)
         check("RepLens still reachable directly", page.is_visible("#btn-continue"))
         check("menu/campaign never request the camera", page.evaluate("window.__gum.length") == 0)
+        ctx.close()
+
+        # ---------- 11b. If the app script can't start, a clear reload notice appears
+        ctx = browser.new_context(**iphone); page = ctx.new_page()
+        page.route("**/js/app.js*", lambda r: r.fulfill(status=404, body="gone"))
+        page.goto(base); page.wait_for_timeout(7600)
+        check("app failing to start shows a reload notice (not dead buttons)", page.is_visible("#boot-fail"))
+        ctx.close()
+        ctx = browser.new_context(**iphone); page = ctx.new_page(); route_model(page)
+        page.goto(base); page.wait_for_timeout(7600)
+        check("no reload notice when the app starts normally", page.is_hidden("#boot-fail"))
         ctx.close()
 
         # ---------- 12. Full Skelesquat battle driven by RepLens rep events (fake pose model)

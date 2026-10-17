@@ -4,8 +4,8 @@
 // transform on the wrapper around BOTH video and canvas, so the drawing
 // stays aligned without ever swapping anatomical left/right landmarks.
 
-import { fitRect } from './geometry.js';
-import { LM, MIN_VISIBILITY } from './exercises.js';
+import { fitRect } from './geometry.js?v=20261017d';
+import { LM, MIN_VISIBILITY } from './exercises.js?v=20261017d';
 
 const CONNECTIONS = [
   [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],

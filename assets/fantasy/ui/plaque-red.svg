@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
-<defs><filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.22 -0.04"/><feComposite in2="SourceGraphic" operator="in"/></filter><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e45a46"/><stop offset=".55" stop-color="#bf3226"/><stop offset="1" stop-color="#93231b"/></linearGradient></defs>
-<path d="M9.5 3.2 L110.5 2.6 L117.4 9.4 L117.8 50.8 L111.2 57.4 L8.8 57.9 L2.6 51.2 L2.3 8.9 Z" fill="url(#f)"/>
-<path d="M9.5 3.2 L110.5 2.6 L117.4 9.4 L117.8 50.8 L111.2 57.4 L8.8 57.9 L2.6 51.2 L2.3 8.9 Z" fill="#3a0d08" filter="url(#g)"/>
-<path d="M14 8.6 L106.4 8.2 L111.9 13.7 L112.2 46.6 L106.8 52 L13.6 52.4 L8.2 46.9 L8 13.9 Z" fill="none" stroke="#ffc3a8" stroke-width="1.5" stroke-linejoin="round" opacity=".7"/>
-<path d="M9.5 3.2 L110.5 2.6 L117.4 9.4 L117.8 50.8 L111.2 57.4 L8.8 57.9 L2.6 51.2 L2.3 8.9 Z" fill="none" stroke="#2a0c08" stroke-width="3.6" stroke-linejoin="round"/>
-<path d="M10.3 2.4 L111 3.4 L118.2 10 L117.1 51.6 L110.6 58.3 L8 57.2 L1.8 50.5 L3 8.2 Z" fill="none" stroke="#2a0c08" stroke-width="1" opacity=".55"/>
-</svg>

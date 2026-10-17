@@ -1,18 +1,18 @@
 // RepLens — UI orchestration. Wires camera → pose engine → exercise tracker → UI.
 
-import { Camera, CameraError, cameraSupport, CAMERA_MESSAGES } from './camera.js';
-import { PoseEngine } from './pose.js';
-import { ExerciseTracker, EXERCISES, EXERCISE_IDS, measureFrame, validateExerciseThresholds, fromInternal } from './exercises.js';
-import { STATES } from './counter.js';
-import { deriveThresholds } from './calibration.js';
-import { Overlay } from './overlay.js';
-import { Feedback } from './audio.js';
-import { Store } from './storage.js';
-import { SETUP_ILLUSTRATIONS } from './illustrations.js';
-import { MEDIAPIPE_VERSION } from './config.js';
-import { Battle, CAMPAIGN, BATTLE_GOALS, INTERVAL_SECONDS, bossMaxHp, shuffle } from './battle.js';
-import { VoicePlayer } from './voice.js';
-import { mealsTodayKcal } from './meals-link.js';
+import { Camera, CameraError, cameraSupport, CAMERA_MESSAGES } from './camera.js?v=20261017d';
+import { PoseEngine } from './pose.js?v=20261017d';
+import { ExerciseTracker, EXERCISES, EXERCISE_IDS, measureFrame, validateExerciseThresholds, fromInternal } from './exercises.js?v=20261017d';
+import { STATES } from './counter.js?v=20261017d';
+import { deriveThresholds } from './calibration.js?v=20261017d';
+import { Overlay } from './overlay.js?v=20261017d';
+import { Feedback } from './audio.js?v=20261017d';
+import { Store } from './storage.js?v=20261017d';
+import { SETUP_ILLUSTRATIONS } from './illustrations.js?v=20261017d';
+import { MEDIAPIPE_VERSION } from './config.js?v=20261017d';
+import { Battle, CAMPAIGN, BATTLE_GOALS, INTERVAL_SECONDS, bossMaxHp, shuffle } from './battle.js?v=20261017d';
+import { VoicePlayer } from './voice.js?v=20261017d';
+import { mealsTodayKcal } from './meals-link.js?v=20261017d';
 
 const $ = (id) => document.getElementById(id);
 const body = document.body;
@@ -926,6 +926,10 @@ applyFx();
 renderHome();
 window.addEventListener('hashchange', onRoute);
 onRoute();
+
+// Show unexpected errors instead of failing silently (helps when testing on a phone).
+window.addEventListener('error', (e) => { if (e.message) toast(`Something went wrong: ${e.message}`, 6000); });
+window.addEventListener('unhandledrejection', (e) => { const m = e.reason?.message; if (m) toast(`Something went wrong: ${m}`, 6000); });
 
 // Expose for debugging in the console (no data leaves the device).
 window.RepLens = { app, pose, camera, store, voice };
