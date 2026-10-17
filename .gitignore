@@ -1,2 +1,8 @@
 node_modules/
 tests/e2e/screens/
+mealbase/dist/
+mealbase/.dev/
+mealbase/data/
+mealbase/dist-static*/
+.env
+mealbase/node_modules

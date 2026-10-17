@@ -1,3 +1,7 @@
 [build]
   publish = "."
   command = ""
+
+# MealBase food search: USDA proxy (set USDA_API_KEY in Site configuration → Environment variables)
+[functions]
+  directory = "netlify/functions"

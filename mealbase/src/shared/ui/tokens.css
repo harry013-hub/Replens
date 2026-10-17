@@ -1,0 +1,85 @@
+/*
+ * MealBase design tokens. Restyle the whole module by changing these values.
+ * Everything is scoped to .mb-root so it can sit inside another application
+ * without leaking styles. All custom properties use the --mb- prefix.
+ */
+.mb-root {
+  /* colour */
+  --mb-bg: #f4f7f3;
+  --mb-surface: #ffffff;
+  --mb-surface-2: #eef3ee;
+  --mb-ink: #1d2a22;
+  --mb-muted: #56675d;
+  --mb-line: #d7e0d8;
+  --mb-accent: #2c6a4c;          /* basil */
+  --mb-accent-hover: #245a40;
+  --mb-accent-ink: #ffffff;
+  --mb-accent-soft: #e0eee5;
+  --mb-marker: #e7ad3f;          /* saffron: marks "today" */
+  --mb-info-bg: #e8f0f7;
+  --mb-info-ink: #24435e;
+  --mb-warn-bg: #fdf3d8;
+  --mb-warn-ink: #5c4304;
+  --mb-error-bg: #fbe9e7;
+  --mb-error-ink: #8a2a20;
+  --mb-sample-bg: #f1e9fb;
+  --mb-sample-ink: #4f2f78;
+  --mb-focus: #1f6fd1;
+
+  /* type */
+  --mb-font: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mb-text-xs: 0.8125rem;
+  --mb-text-sm: 0.9375rem;
+  --mb-text-md: 1.0625rem;
+  --mb-text-lg: 1.3125rem;
+  --mb-text-xl: 1.75rem;
+  --mb-text-display: 2.75rem;
+  --mb-leading: 1.5;
+
+  /* space & shape */
+  --mb-space-1: 4px;
+  --mb-space-2: 8px;
+  --mb-space-3: 12px;
+  --mb-space-4: 16px;
+  --mb-space-5: 24px;
+  --mb-space-6: 32px;
+  --mb-space-7: 48px;
+  --mb-radius-sm: 8px;
+  --mb-radius-md: 12px;
+  --mb-radius-lg: 20px;
+  --mb-touch: 48px;              /* minimum touch target */
+  --mb-shadow: 0 1px 2px rgb(29 42 34 / 0.06), 0 4px 16px rgb(29 42 34 / 0.06);
+  --mb-nav-height: 68px;
+  --mb-content-width: 760px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mb-root:not([data-theme="light"]) {
+    --mb-bg: #121815;
+    --mb-surface: #1a221d;
+    --mb-surface-2: #212b25;
+    --mb-ink: #e8efe9;
+    --mb-muted: #a2b2a8;
+    --mb-line: #2f3b34;
+    --mb-accent: #6cc39a;
+    --mb-accent-hover: #86d2ad;
+    --mb-accent-ink: #0d1f16;
+    --mb-accent-soft: #1f3a2d;
+    --mb-info-bg: #1b2a38;
+    --mb-info-ink: #bcd5ec;
+    --mb-warn-bg: #3a2f12;
+    --mb-warn-ink: #f2dc9f;
+    --mb-error-bg: #3c1d19;
+    --mb-error-ink: #f5c2bb;
+    --mb-sample-bg: #2c2140;
+    --mb-sample-ink: #dccbf5;
+    --mb-focus: #7fb4ff;
+    --mb-shadow: none;
+  }
+}
+.mb-root[data-theme="dark"] {
+  --mb-bg: #121815; --mb-surface: #1a221d; --mb-surface-2: #212b25; --mb-ink: #e8efe9; --mb-muted: #a2b2a8; --mb-line: #2f3b34;
+  --mb-accent: #6cc39a; --mb-accent-hover: #86d2ad; --mb-accent-ink: #0d1f16; --mb-accent-soft: #1f3a2d;
+  --mb-info-bg: #1b2a38; --mb-info-ink: #bcd5ec; --mb-warn-bg: #3a2f12; --mb-warn-ink: #f2dc9f;
+  --mb-error-bg: #3c1d19; --mb-error-ink: #f5c2bb; --mb-sample-bg: #2c2140; --mb-sample-ink: #dccbf5; --mb-focus: #7fb4ff; --mb-shadow: none;
+}

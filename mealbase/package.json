@@ -1,0 +1,42 @@
+{
+  "name": "mealbase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MealBase – nutrition module: food logging, USDA food search, weekly meal planning.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning dist/server/index.js",
+    "db:migrate": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/database/cli.ts migrate",
+    "db:seed": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx src/database/cli.ts seed",
+    "recipes:match-usda": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --import tsx scripts/match-recipes-usda.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --import tsx --test \"tests/**/*.test.ts\"",
+    "build:static": "node scripts/build-static.mjs",
+    "build:replens": "node scripts/build-static.mjs --out ../meals --function ../netlify/functions/usda.mjs --theme dark"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.7.0 || ^6.0.0"
+  },
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/public.ts",
+    "./styles/tokens.css": "./src/shared/ui/tokens.css",
+    "./styles/components.css": "./src/shared/ui/components.css"
+  }
+}
