@@ -20,7 +20,7 @@ test('sessions persist across instances and totals stay separate per exercise', 
   a.addSession(sess('pushup', 5));
   const b = new Store(mem);
   assert.equal(b.sessions.length, 3);
-  assert.deepEqual(b.totals(), { pushup: 15, squat: 7 });
+  assert.deepEqual(b.totals(), { pushup: 15, squat: 7, curl: 0, press: 0 });
 });
 
 test('only summaries are stored — no extra fields leak in', () => {

@@ -1,6 +1,6 @@
 # RepLens
 
-A mobile-first website that uses your phone's (or computer's) camera to count **push-ups** and **squats** automatically. Pose tracking runs entirely in the browser with Google's MediaPipe Pose Landmarker. Video is never recorded or uploaded.
+A mobile-first website that uses your phone's (or computer's) camera to count **push-ups**, **squats**, **bicep curls** and **shoulder presses** automatically. Pose tracking runs entirely in the browser with Google's MediaPipe Pose Landmarker. Video is never recorded or uploaded.
 
 It's plain HTML, CSS and JavaScript, so there is no build step. Any static web host can serve the folder as it is.
 
@@ -125,10 +125,14 @@ RETURNING_TO_TOP ──(angle ≥ "top", stable 120 ms)──▶ +1 rep → READ
 
 These are **detection heuristics, not exercise standards or form judgements.** Change them in **Settings → Detection thresholds**. Invalid or overlapping values are rejected.
 
-| | Top (enter) | Leave top | Leave bottom | Bottom (enter) |
+| | Start position | Leave start | Leave end | End position |
 |---|---|---|---|---|
-| Push-ups (elbow: shoulder–elbow–wrist) | 155 | 145 | 110 | 100 |
-| Squats (knee: hip–knee–ankle) | 160 | 150 | 120 | 110 |
+| Push-ups (elbow: shoulder–elbow–wrist), side view | 155 | 145 | 110 | 100 |
+| Squats (knee: hip–knee–ankle), side view | 160 | 150 | 120 | 110 |
+| Bicep curls (elbow), side view | 150 | 140 | 82 | 70 |
+| Shoulder press (elbow), front view, **angle rises** | 100 | 110 | 140 | 150 |
+
+Supporting checks for the new exercises: a curl only counts if the hand actually rises toward the shoulder with the upper arm hanging by the side (so push-ups and presses never count as curls). A press only counts if the hands start above the elbows and actually rise well above the shoulders (so arms hanging or curls never count as presses). Curls track the arm nearest the camera, or both arms when they move together; alternating arms is not a separate mode yet.
 
 **Squat calibration** (Setup → Calibrate) records your own comfortable standing and lowered positions. It rejects the result if tracking was poor, if you weren't holding still, or if the two positions are too similar (under 35° apart). It always keeps the thresholds in order and well separated. There is no "correct" depth; RepLens is an approximate rep counter, not a clinical form assessment.
 

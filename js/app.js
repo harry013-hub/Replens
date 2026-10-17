@@ -2,8 +2,8 @@
 
 import { Camera, CameraError, cameraSupport, CAMERA_MESSAGES } from './camera.js';
 import { PoseEngine } from './pose.js';
-import { ExerciseTracker, EXERCISES, measureFrame } from './exercises.js';
-import { STATES, validateThresholds } from './counter.js';
+import { ExerciseTracker, EXERCISES, EXERCISE_IDS, measureFrame, validateExerciseThresholds, fromInternal } from './exercises.js';
+import { STATES } from './counter.js';
 import { deriveThresholds } from './calibration.js';
 import { Overlay } from './overlay.js';
 import { Feedback } from './audio.js';
@@ -14,11 +14,6 @@ import { MEDIAPIPE_VERSION } from './config.js';
 const $ = (id) => document.getElementById(id);
 const body = document.body;
 
-// Measured limb chains to highlight on the skeleton.
-const CHAINS = {
-  pushup: ['wrist', 'elbow', 'shoulder', 'hip', 'ankle'],
-  squat: ['shoulder', 'hip', 'knee', 'ankle'],
-};
 
 const store = new Store();
 const prefs = store.prefs;
@@ -28,7 +23,7 @@ const overlay = new Overlay($('overlay'), $('video'));
 const fx = new Feedback();
 
 const app = {
-  exercise: prefs.lastExercise === 'squat' ? 'squat' : 'pushup',
+  exercise: EXERCISE_IDS.includes(prefs.lastExercise) ? prefs.lastExercise : 'pushup',
   phase: 'idle', // idle | setup | countdown | active | paused | finished
   tracker: null,
   session: null,
@@ -78,7 +73,7 @@ function setScreen(name) {
 
 function thresholdsFor(ex) {
   const saved = prefs.thresholds?.[ex];
-  return saved && !validateThresholds(saved) ? saved : EXERCISES[ex].defaultThresholds;
+  return saved && !validateExerciseThresholds(ex, saved) ? saved : EXERCISES[ex].defaultThresholds;
 }
 
 const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
@@ -93,7 +88,7 @@ function renderHome() {
     b.setAttribute('aria-checked', String(b.dataset.exercise === app.exercise));
   });
   const totals = store.totals();
-  for (const ex of ['pushup', 'squat']) {
+  for (const ex of EXERCISE_IDS) {
     const el = document.querySelector(`[data-total="${ex}"]`);
     el.textContent = `${totals[ex]} total reps`;
   }
@@ -160,7 +155,7 @@ function goSetup() {
   $('hud').hidden = true;
   $('paused-overlay').hidden = true;
   $('countdown').hidden = true;
-  $('btn-calibrate').hidden = app.exercise !== 'squat';
+  $('btn-calibrate').hidden = false;
   hideError();
   app.tracker = new ExerciseTracker(app.exercise, thresholdsFor(app.exercise));
   refreshCameraUi();
@@ -319,7 +314,7 @@ function onPose({ landmarks, width, height, t }) {
     if (app.calib) $('calib-live').textContent = m.valid ? `${EXERCISES[ex].angleLabel}: ${Math.round(m.raw)}°` : (m.message || 'Not detected');
   }
   app.lastResult = r;
-  overlay.draw(landmarks, { side: r.debug?.side, joints: CHAINS[ex] }, r.status);
+  overlay.draw(landmarks, { side: r.debug?.side, joints: EXERCISES[ex].chain }, r.status);
   renderTracking(r);
 }
 
@@ -361,7 +356,7 @@ function handleEvent(r) {
     fx.rep(r.reps);
     renderTarget(r.reps);
   } else if (r.event === 'partial') {
-    transient(app.exercise === 'squat' ? 'Not counted — calibrate if your comfortable depth isn’t detected' : 'Not counted');
+    transient('Not counted — tap Calibrate in setup if your comfortable range isn’t detected');
   } else if (r.event === 'lost' || r.event === 'gap') {
     transient('Tracking paused — body not clearly visible.', 1800);
   }
@@ -650,7 +645,7 @@ function fillThresholds(th) {
 }
 
 function saveThresholds(th) {
-  const err = validateThresholds(th);
+  const err = validateExerciseThresholds(app.exercise, th);
   if (err) { $('th-error').textContent = err; $('th-error').hidden = false; return false; }
   $('th-error').hidden = true;
   prefs.thresholds = { ...prefs.thresholds, [app.exercise]: th };
@@ -708,12 +703,17 @@ async function runCalibration() {
     fx.go();
     return c.samples.slice();
   };
-  const top = await collect('Stand comfortably, side-on');
-  const low = top && await collect('Lower to a comfortable position');
+  const ex = EXERCISES[app.exercise];
+  const top = await collect(ex.calibration.start);
+  const low = top && await collect(ex.calibration.end);
   c.running = false;
   $('calib-go').disabled = false;
   if (c.cancelled || !top || !low) return;
-  const r = deriveThresholds(top, low);
+  // Calibration works in the counter's internal space (negated for the press).
+  const sign = ex.invert ? -1 : 1;
+  const flip = (arr) => arr.map((x) => ({ valid: x.valid, value: x.value == null ? null : sign * x.value }));
+  const r = deriveThresholds(flip(top), flip(low));
+  if (r.ok) r.thresholds = fromInternal(app.exercise, r.thresholds);
   if (!r.ok) {
     say(`${r.error}`);
     $('calib-go').textContent = 'Try again';
@@ -722,12 +722,14 @@ async function runCalibration() {
   saveThresholds(r.thresholds);
   closeSheet('calib');
   app.calib = null;
-  toast(`Calibrated: standing ≈${Math.round(r.topMedian)}°, lowered ≈${Math.round(r.lowMedian)}°`, 4000);
+  toast(`Calibrated: start ≈${Math.round(sign * r.topMedian)}°, end ≈${Math.round(sign * r.lowMedian)}°`, 4000);
 }
 
 function openCalibration() {
   if (!camera.active || !pose.ready) return;
-  $('calib-text').textContent = 'Optional. Records your comfortable standing and lowered positions so counting fits your range. There is no “right” depth — pick what is comfortable. You will hear a beep at each step.';
+  const ex = EXERCISES[app.exercise];
+  $('calib-title').textContent = `Calibrate ${ex.name.toLowerCase()}`;
+  $('calib-text').textContent = `Optional. Records your comfortable start position (“${ex.calibration.start.toLowerCase()}”) and end position (“${ex.calibration.end.toLowerCase()}”) so counting fits your range. There is no “right” depth — pick what is comfortable. You will hear a beep at each step.`;
   $('calib-go').textContent = 'Begin';
   $('calib-live').textContent = '';
   $('calib-bar').style.width = '0%';
@@ -755,7 +757,7 @@ function renderDev() {
     `phase: ${app.phase} · state: ${app.tracker?.state ?? '—'}`,
     `status: ${r?.status ?? '—'} · side: ${r?.debug?.side ?? '—'}`,
     `angle raw: ${r?.debug?.raw?.toFixed?.(1) ?? '—'} smooth: ${r?.debug?.smooth?.toFixed?.(1) ?? '—'}`,
-    `th: top≥${th.topEnter} leave<${th.topExit} | up≥${th.bottomExit} bottom≤${th.bottomEnter}`,
+    `th: start ${th.topEnter} · leave ${th.topExit} | leave end ${th.bottomExit} · end ${th.bottomEnter}${EXERCISES[app.exercise].invert ? ' (angle rises)' : ''}`,
     `L ${fmtConf(conf?.left)}`,
     `R ${fmtConf(conf?.right)}`,
     `reps: ${app.tracker?.reps ?? 0}`,

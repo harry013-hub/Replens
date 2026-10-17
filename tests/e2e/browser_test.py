@@ -300,6 +300,37 @@ def main():
         page.screenshot(path=f"{OUT}/iphone-squat-setup.png")
         ctx.close()
 
+        # ---------- 10. Shoulder press end-to-end (angle rises during the rep)
+        ctx = browser.new_context(**iphone); page = ctx.new_page(); route_model(page)
+        page.goto(base); page.click("[data-exercise='press']"); page.click("#btn-continue")
+        check("press instructions shown", "room above your head" in page.inner_text("#setup-instruction"))
+        page.evaluate("window.__fakePose = {kind:'press', angle:85}")
+        page.click("#btn-enable-camera")
+        page.wait_for_function("!document.getElementById('btn-start').disabled", timeout=10000)
+        page.click("#btn-start")
+        page.wait_for_selector("#countdown", state="hidden", timeout=8000)
+        page.wait_for_timeout(900)
+        for _ in range(3):
+            for a in [100, 120, 140, 160, 170, 170]:
+                page.evaluate(f"window.__fakePose.angle = {a}"); page.wait_for_timeout(100)
+            for a in [150, 120, 100, 88, 85, 85, 85]:
+                page.evaluate(f"window.__fakePose.angle = {a}"); page.wait_for_timeout(100)
+        page.wait_for_timeout(400)
+        c = page.inner_text("#rep-count")
+        check("3 shoulder presses counted", c == "3", c)
+        page.screenshot(path=f"{OUT}/iphone-press-workout.png")
+        page.click("#btn-finish")
+        page.wait_for_timeout(200)
+        check("press summary", page.inner_text("#sum-exercise") == "Shoulder press" and page.inner_text("#sum-reps") == "3")
+        page.click("#btn-home")
+        check("press total shown separately", "3 total" in page.inner_text("[data-total='press']") and "0 total" in page.inner_text("[data-total='curl']"))
+        page.click("[data-exercise='curl']"); page.click("#btn-continue")
+        check("curl instructions shown", "Curl with the arm nearest" in page.inner_text("#setup-instruction"))
+        page.screenshot(path=f"{OUT}/iphone-curl-setup.png")
+        page.click("#btn-back")
+        page.screenshot(path=f"{OUT}/iphone-home-4.png", full_page=True)
+        ctx.close()
+
         # icons
         ctx = browser.new_context(viewport={"width": 512, "height": 512}); page = ctx.new_page()
         page.goto(base + "assets/icon.svg"); page.screenshot(path=os.path.join(ROOT, "assets", "icon-512.png"))

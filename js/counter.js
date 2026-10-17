@@ -36,7 +36,6 @@ export function validateThresholds(th) {
   const { topEnter, topExit, bottomExit, bottomEnter } = th || {};
   const nums = [topEnter, topExit, bottomExit, bottomEnter];
   if (!nums.every(Number.isFinite)) return 'All thresholds must be numbers.';
-  if (nums.some((n) => n < 20 || n > 180)) return 'Thresholds must be between 20° and 180°.';
   if (!(topEnter - topExit >= 4)) return 'Top entry must be at least 4° above top exit.';
   if (!(bottomExit - bottomEnter >= 4)) return 'Bottom exit must be at least 4° above bottom entry.';
   if (!(topExit - bottomExit >= 10)) return 'Top and bottom zones must be at least 10° apart.';

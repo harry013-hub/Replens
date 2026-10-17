@@ -10,8 +10,8 @@ export const DEFAULT_PREFS = Object.freeze({
   speak: false,
   skeleton: true,
   facing: 'user',
-  target: { pushup: 0, squat: 0 },
-  thresholds: { pushup: null, squat: null }, // null = defaults
+  target: { pushup: 0, squat: 0, curl: 0, press: 0 },
+  thresholds: { pushup: null, squat: null, curl: null, press: null }, // null = defaults
 });
 
 function probe(storage) {
@@ -109,7 +109,7 @@ export class Store {
   }
 
   totals() {
-    const t = { pushup: 0, squat: 0 };
+    const t = { pushup: 0, squat: 0, curl: 0, press: 0 };
     for (const s of this.data.sessions) if (s.exercise in t) t[s.exercise] += s.reps;
     return t;
   }
@@ -121,7 +121,7 @@ export class Store {
 }
 
 function validSession(s) {
-  return s && (s.exercise === 'pushup' || s.exercise === 'squat') && Number.isFinite(s.reps);
+  return s && ['pushup', 'squat', 'curl', 'press'].includes(s.exercise) && Number.isFinite(s.reps);
 }
 
 function structuredCloneSafe(o) {

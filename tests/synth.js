@@ -102,3 +102,43 @@ export function repKeyframes(n, { top = 170, bottom = 80, startHold = 1000, down
   }
   return k;
 }
+
+/** Standing bicep curl seen from the side; elbowDeg 180 = arm straight down. */
+export function curlPose(elbowDeg, { W = 480, H = 640, vis = 0.95, farVis = 0.95, farOffset = 3 } = {}) {
+  const shoulder = { x: 240, y: 200 }, hip = { x: 240, y: 380 };
+  const elbow = { x: 245, y: 310 };
+  const beta = Math.PI - (elbowDeg * Math.PI) / 180; // forearm angle from straight down
+  const wrist = { x: elbow.x + 100 * Math.sin(beta), y: elbow.y + 100 * Math.cos(beta) };
+  const knee = { x: 240, y: 480 }, ankle = { x: 240, y: 580 };
+  const lm = EMPTY();
+  const pts = { shoulder, elbow, wrist, hip, knee, ankle };
+  for (const k of Object.keys(pts)) {
+    put(lm, L[k], pts[k], W, H, vis);
+    put(lm, R[k], { x: pts[k].x + farOffset, y: pts[k].y }, W, H, farVis);
+  }
+  return lm;
+}
+
+/**
+ * Shoulder press seen from the front. Forearms vertical; elbowDeg ≈ 85 with
+ * hands at the shoulders, ≈ 170 with arms overhead. `hanging` = arms down.
+ */
+export function pressPose(elbowDeg, { W = 640, H = 480, vis = 0.95, hanging = false } = {}) {
+  const lm = EMPTY();
+  const phi = ((elbowDeg - 90) * Math.PI) / 180; // upper-arm elevation above horizontal
+  for (const [side, dir] of [[L, 1], [R, -1]]) {
+    const shoulder = { x: 320 + 50 * dir, y: 200 };
+    const hip = { x: 320 + 40 * dir, y: 400 };
+    let elbow, wrist;
+    if (hanging) {
+      elbow = { x: shoulder.x + 8 * dir, y: 280 };
+      wrist = { x: shoulder.x + 10 * dir, y: 360 };
+    } else {
+      elbow = { x: shoulder.x + 80 * Math.cos(phi) * dir, y: shoulder.y - 80 * Math.sin(phi) };
+      wrist = { x: elbow.x, y: elbow.y - 80 };
+    }
+    const pts = { shoulder, elbow, wrist, hip, knee: { x: hip.x, y: 470 }, ankle: { x: hip.x, y: 475 } };
+    for (const k of Object.keys(pts)) put(lm, side[k], pts[k], W, H, vis);
+  }
+  return lm;
+}

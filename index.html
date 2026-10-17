@@ -63,6 +63,29 @@
           <span class="ex-name">Squats</span>
           <span class="ex-total" data-total="squat">0 total</span>
         </button>
+        <button class="exercise-card" role="radio" aria-checked="false" data-exercise="curl">
+          <svg viewBox="0 0 160 90" aria-hidden="true" class="ex-illus">
+            <line x1="8" y1="86" x2="152" y2="86" class="floor"/>
+            <circle cx="80" cy="12" r="8" class="head"/>
+            <path d="M80 21 L80 56 L74 86 M80 56 L86 86" class="body"/>
+            <path d="M80 26 L84 46 L100 30" class="limb"/>
+            <rect x="96" y="22" width="12" height="9" rx="2" class="head"/>
+          </svg>
+          <span class="ex-name">Bicep curls</span>
+          <span class="ex-total" data-total="curl">0 total</span>
+        </button>
+        <button class="exercise-card" role="radio" aria-checked="false" data-exercise="press">
+          <svg viewBox="0 0 160 90" aria-hidden="true" class="ex-illus">
+            <line x1="8" y1="86" x2="152" y2="86" class="floor"/>
+            <circle cx="80" cy="30" r="8" class="head"/>
+            <path d="M80 39 L80 64 L74 86 M80 64 L86 86" class="body"/>
+            <path d="M80 42 L60 36 L58 8 M80 42 L100 36 L102 8" class="limb"/>
+            <rect x="46" y="2" width="24" height="7" rx="3" class="head"/>
+            <rect x="90" y="2" width="24" height="7" rx="3" class="head"/>
+          </svg>
+          <span class="ex-name">Shoulder press</span>
+          <span class="ex-total" data-total="press">0 total</span>
+        </button>
       </div>
     </section>
 
@@ -246,12 +269,12 @@
       <label class="toggle"><input type="checkbox" id="set-cpu"><span>Compatibility mode <span class="muted">(CPU processing — try this if tracking never shows on your device)</span></span></label>
 
       <h3 class="sub">Detection thresholds — <span id="th-ex-name">Push-ups</span></h3>
-      <p class="muted small">Adjustable heuristics, not exercise standards. The rep starts when the angle drops below “leave top”, reaches the bottom below “bottom”, and counts after rising back above “top”.</p>
+      <p class="muted small">Adjustable heuristics, not exercise standards. A rep starts when the joint angle leaves the start position, must reach the end position, and counts when it returns to the start position. For the shoulder press the angle rises from start to end.</p>
       <div class="th-grid">
-        <label>Top (enter) °<input type="number" inputmode="numeric" id="th-topEnter" min="20" max="180"></label>
-        <label>Leave top °<input type="number" inputmode="numeric" id="th-topExit" min="20" max="180"></label>
-        <label>Leave bottom °<input type="number" inputmode="numeric" id="th-bottomExit" min="20" max="180"></label>
-        <label>Bottom (enter) °<input type="number" inputmode="numeric" id="th-bottomEnter" min="20" max="180"></label>
+        <label>Start position °<input type="number" inputmode="numeric" id="th-topEnter" min="20" max="180"></label>
+        <label>Leave start °<input type="number" inputmode="numeric" id="th-topExit" min="20" max="180"></label>
+        <label>Leave end °<input type="number" inputmode="numeric" id="th-bottomExit" min="20" max="180"></label>
+        <label>End position °<input type="number" inputmode="numeric" id="th-bottomEnter" min="20" max="180"></label>
       </div>
       <p id="th-error" class="notice notice-error small" hidden></p>
       <div class="btn-row">
@@ -265,8 +288,8 @@
   <div id="calib" class="sheet" role="dialog" aria-modal="true" aria-labelledby="calib-title" hidden>
     <div class="sheet-backdrop"></div>
     <div class="sheet-body calib-body">
-      <h2 id="calib-title">Calibrate squat</h2>
-      <p id="calib-text">Optional. Records your comfortable standing and lowered positions so counting fits your range. There is no "right" depth.</p>
+      <h2 id="calib-title">Calibrate</h2>
+      <p id="calib-text">Optional. Records your comfortable start and end positions so counting fits your range.</p>
       <p id="calib-live" class="calib-live mono" aria-live="polite"></p>
       <div class="progress"><div id="calib-bar"></div></div>
       <div class="btn-row">

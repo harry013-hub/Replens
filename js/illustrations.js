@@ -29,4 +29,31 @@ export const SETUP_ILLUSTRATIONS = {
     <path class="i-person" d="M246 52 L282 64"/>
     <text x="120" y="168" class="i-label">shoulders · hips · knees · ankles visible</text>
   </svg>`,
+  curl: `
+  <svg viewBox="0 0 360 170" role="img" aria-label="Phone at chest height beside a person doing a bicep curl, side view">
+    <line x1="10" y1="150" x2="350" y2="150" class="i-floor"/>
+    <path class="i-ray" d="M80 70 L250 10 M80 70 L250 150"/>
+    <line x1="80" y1="100" x2="80" y2="150" stroke="#33415c" stroke-width="4"/>
+    ${phone(72, 60)}
+    <text x="20" y="54" class="i-label">phone ~2 m away, side view</text>
+    <circle cx="250" cy="26" r="10" class="i-head"/>
+    <path class="i-person" d="M250 37 L250 95 L242 148 M250 95 L258 148"/>
+    <path class="i-person" d="M250 44 L254 76 L280 52"/>
+    <rect x="276" y="44" width="14" height="10" rx="3" class="i-head"/>
+    <text x="110" y="168" class="i-label">shoulders · elbows · wrists · hips visible</text>
+  </svg>`,
+  press: `
+  <svg viewBox="0 0 360 170" role="img" aria-label="Phone facing a person doing a shoulder press, front view">
+    <line x1="10" y1="150" x2="350" y2="150" class="i-floor"/>
+    <path class="i-ray" d="M60 80 L230 4 M60 80 L230 150"/>
+    <line x1="60" y1="110" x2="60" y2="150" stroke="#33415c" stroke-width="4"/>
+    ${phone(52, 70)}
+    <text x="10" y="62" class="i-label">phone ~2 m, facing you</text>
+    <circle cx="250" cy="52" r="10" class="i-head"/>
+    <path class="i-person" d="M250 63 L250 108 L240 148 M250 108 L260 148"/>
+    <path class="i-person" d="M250 68 L224 64 L222 28 M250 68 L276 64 L278 28"/>
+    <rect x="208" y="20" width="28" height="8" rx="3" class="i-head"/>
+    <rect x="264" y="20" width="28" height="8" rx="3" class="i-head"/>
+    <text x="100" y="168" class="i-label">leave room above your head for your hands</text>
+  </svg>`,
 };
