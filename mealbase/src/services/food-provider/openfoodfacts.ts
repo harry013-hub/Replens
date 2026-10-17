@@ -3,8 +3,10 @@
  * Pages), because Open Food Facts allows websites to call it directly.
  *
  * Verified against the openfoodfacts-server repository and API docs (October 2026):
- * - No key. Reads need only an identifying User-Agent; browsers can't set that,
- *   so we send X-User-Agent, which the server's CORS rules explicitly allow.
+ * - No key. Requests are plain GETs with no custom headers, so browsers never need a
+ *   CORS preflight. If a browser still can't fetch (privacy settings, CORS trouble),
+ *   the legacy endpoints are retried with JSONP (`jsonp=` parameter, supported by
+ *   Product Opener's display code), and product details fall back to the search data.
  * - CORS: the API answers any origin with Access-Control-Allow-Origin.
  * - Full-text search: Search-a-licious, GET https://search.openfoodfacts.org/search?q=…
  *   (fast Elasticsearch service; its CORS middleware allows any http(s) origin), falling back to
@@ -30,7 +32,27 @@ export interface OffOptions {
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   pageSize?: number;
-  appId?: string;
+  /** Load a JSONP URL (browser default uses a <script> tag). Pass null to disable. */
+  jsonpImpl?: ((url: string) => Promise<unknown>) | null;
+}
+
+let jsonpSeq = 0;
+/** Minimal JSONP loader for browsers. */
+export function browserJsonp(url: string, timeoutMs = 15_000): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') return reject(new Error('no document'));
+    const name = `__mealbaseJsonp${Date.now()}${jsonpSeq++}`;
+    const u = new URL(url);
+    u.searchParams.set('jsonp', name);
+    const script = document.createElement('script');
+    const w = window as unknown as Record<string, unknown>;
+    const done = () => { delete w[name]; script.remove(); clearTimeout(timer); };
+    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, timeoutMs);
+    w[name] = (data: unknown) => { done(); resolve(data); };
+    script.onerror = () => { done(); reject(new Error('script error')); };
+    script.src = u.toString();
+    document.head.appendChild(script);
+  });
 }
 
 function num(v: unknown): number | null {
@@ -120,11 +142,15 @@ export class OpenFoodFactsProvider implements FoodProvider {
   private readonly f: typeof fetch;
   private readonly searches = new Cache<ProviderSearchPage>(15 * 60_000);
   private readonly details = new Cache<ProviderFood>(24 * 60 * 60_000);
+  /** Raw products seen in search results, used if the details request fails. */
+  private readonly seen = new Cache<Record<string, unknown>>(24 * 60 * 60_000);
+  private readonly jsonp: ((url: string) => Promise<unknown>) | null;
 
   constructor(private readonly opts: OffOptions = {}) {
     this.base = (opts.baseUrl ?? 'https://world.openfoodfacts.org').replace(/\/+$/, '');
     this.searchBase = (opts.searchBaseUrl ?? 'https://search.openfoodfacts.org').replace(/\/+$/, '');
     this.f = opts.fetchImpl ?? ((...a) => fetch(...a));
+    this.jsonp = opts.jsonpImpl === undefined ? (typeof document !== 'undefined' ? (u) => browserJsonp(u, opts.timeoutMs ?? 15_000) : null) : opts.jsonpImpl;
   }
 
   isConfigured() { return true; }
@@ -136,12 +162,20 @@ export class OpenFoodFactsProvider implements FoodProvider {
     const timer = setTimeout(() => controller.abort(), this.opts.timeoutMs ?? 15_000);
     let res: Response;
     try {
-      res = await this.f(url, {
-        headers: { Accept: 'application/json', 'X-User-Agent': this.opts.appId ?? 'RepLens-MealBase/1.0 (https://github.com/harry013-hub/Replens)' },
-        signal: controller.signal,
-      });
-    } catch {
-      throw new ProviderError('UNAVAILABLE', 'Open Food Facts could not be reached. Check your connection and try again, or add the food manually.');
+      res = await this.f(url, { signal: controller.signal });
+    } catch (err) {
+      // Network/CORS failure or timeout. The legacy endpoints also speak JSONP.
+      if (this.jsonp && base === this.base) {
+        try {
+          return await this.jsonp(url.toString());
+        } catch {
+          // fall through to the error below
+        }
+      }
+      const timedOut = (err as { name?: string })?.name === 'AbortError';
+      throw new ProviderError('UNAVAILABLE', timedOut
+        ? 'Open Food Facts took too long to answer. Try again in a moment, or add the food manually.'
+        : 'Open Food Facts could not be reached from this browser. If you use an ad or tracker blocker, allow openfoodfacts.org; otherwise try again, or add the food manually.');
     } finally {
       clearTimeout(timer);
     }
@@ -200,7 +234,7 @@ export class OpenFoodFactsProvider implements FoodProvider {
         if (r.products.length === 0 && words.length > 1 && page === 1) r = await this.searchOnce(words.join(' OR '), page, pageSize);
         for (const p of r.products) {
           const code = typeof p.code === 'string' ? p.code : null;
-          if (code && !seen.has(code)) { seen.add(code); products.push(p); }
+          if (code && !seen.has(code)) { seen.add(code); products.push(p); this.seen.set(code, p); }
         }
         count = Math.max(count ?? 0, r.count ?? 0);
       } catch (err) {
@@ -229,7 +263,14 @@ export class OpenFoodFactsProvider implements FoodProvider {
     if (!/^[0-9A-Za-z-]{1,40}$/.test(code)) throw new ProviderError('NOT_FOUND', 'Invalid product code.');
     const hit = this.details.get(code);
     if (hit) return hit;
-    const body = await this.get(`/api/v2/product/${encodeURIComponent(code)}.json`, { fields: FIELDS });
+    let body: any;
+    try {
+      body = await this.get(`/api/v2/product/${encodeURIComponent(code)}.json`, { fields: FIELDS });
+    } catch (err) {
+      const fromSearch = this.seen.get(code);
+      if (fromSearch && err instanceof ProviderError && err.code !== 'NOT_FOUND') body = { status: 1, product: fromSearch };
+      else throw err;
+    }
     if (!body || body.status === 0 || !body.product) throw new ProviderError('NOT_FOUND', 'That product was not found in Open Food Facts.');
     const p = body.product as Record<string, unknown>;
     const { values, notes } = offNutrients(p.nutriments);
