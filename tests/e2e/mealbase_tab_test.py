@@ -149,7 +149,7 @@ try:
         plain.get_by_role("button", name="Search", exact=True).click()
         expect(plain.get_by_role("button", name=re.compile("^Rolled Oats"))).to_be_visible()
         check("GitHub Pages mode searches Open Food Facts", True)
-        check("identifying X-User-Agent sent, no key", bool(off_calls) and "RepLens-MealBase" in off_calls[0]["xua"] and "api_key" not in off_calls[0]["url"])
+        check("plain requests: no custom headers (no CORS preflight), no key", bool(off_calls) and not off_calls[0]["xua"] and "api_key" not in off_calls[0]["url"])
         plain.get_by_role("button", name=re.compile("^Rolled Oats")).click()
         expect(plain.get_by_role("heading", name="Rolled Oats")).to_be_visible()
         plain.get_by_label("Unit").select_option(label="1 serving (1/2 cup (40 g)) (40 g)")
@@ -162,6 +162,28 @@ try:
         plain.screenshot(path=os.path.join(OUT, "mb-05-off-today.png"), full_page=True)
         check("manual entry is still offered", True)
         check("no JS errors on the static host", not plain_errors, "; ".join(plain_errors))
+
+        # A browser that can't fetch() Open Food Facts (e.g. CORS/privacy blocking) → JSONP fallback.
+        jsonp_ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        def blocked_or_jsonp(route):
+            req = route.request
+            if req.resource_type == "script" and "/cgi/search.pl" in req.url:
+                from urllib.parse import urlparse, parse_qs
+                cb = parse_qs(urlparse(req.url).query)["jsonp"][0]
+                body = open(os.path.join(FIX, "off-search-oat.json")).read()
+                return route.fulfill(status=200, body=f"{cb}({body});", headers={"Content-Type": "text/javascript"})
+            route.abort()
+        jsonp_ctx.route("https://world.openfoodfacts.org/**", blocked_or_jsonp)
+        jsonp_ctx.route("https://search.openfoodfacts.org/**", lambda route: route.abort())
+        jp = jsonp_ctx.new_page()
+        jp.goto(f"http://127.0.0.1:{plain_port}/meals/#/search")
+        jp.get_by_role("searchbox").fill("oat")
+        jp.get_by_role("button", name="Search", exact=True).click()
+        expect(jp.get_by_role("button", name=re.compile("^Rolled Oats"))).to_be_visible(timeout=20000)
+        check("search still works when fetch is blocked (JSONP fallback)", True)
+        jp.get_by_role("button", name=re.compile("^Oat Drink")).click()
+        expect(jp.get_by_role("heading", name="Oat Drink")).to_be_visible(timeout=20000)
+        check("product details fall back to search data", jp.get_by_text("Per 100 ml").is_visible())
         browser.close()
 finally:
     for pr in procs:

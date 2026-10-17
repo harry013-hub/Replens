@@ -31,14 +31,14 @@ describe('Open Food Facts provider', () => {
     assert.equal(offNutrients({ fat_100g: -3 }).values.fatG, null, 'bad values are not trusted');
   });
 
-  it('searches with an identifying header, no key, and ranks products with data first', async () => {
+  it('searches with plain GET requests, no key, and ranks products with data first', async () => {
     mode = 'ok';
-    const p = new OpenFoodFactsProvider({ fetchImpl: offFetch });
+    const p = new OpenFoodFactsProvider({ fetchImpl: offFetch, jsonpImpl: null });
     const page = await p.search('oat', 1);
     const last = seen.at(-1)!;
     assert.equal(last.url.origin, 'https://world.openfoodfacts.org');
     assert.equal(last.url.searchParams.get('search_terms'), 'oat');
-    assert.match(last.headers.get('x-user-agent')!, /RepLens-MealBase/);
+    assert.equal(last.headers.get('x-user-agent'), null, 'no custom headers, so no CORS preflight');
     assert.equal(last.url.searchParams.get('api_key'), null);
     assert.deepEqual(page.items.map((i) => i.name), ['Rolled Oats', 'Oat Drink', 'Oat thing with no data']);
     assert.equal(page.items[0].brand, 'Example Mills');
@@ -47,7 +47,7 @@ describe('Open Food Facts provider', () => {
   });
 
   it('maps product details and servings in the matching unit', async () => {
-    const f = await new OpenFoodFactsProvider({ fetchImpl: offFetch }).getFood('0000000000017');
+    const f = await new OpenFoodFactsProvider({ fetchImpl: offFetch, jsonpImpl: null }).getFood('0000000000017');
     assert.equal(f.providerId, 'off');
     assert.deepEqual(f.reference, { quantity: 100, unit: 'g', values: { calories: 375, proteinG: 12.5, carbsG: 67.5, fatG: 7 } });
     assert.deepEqual(f.servings, [{ label: '1 serving (1/2 cup (40 g))', unitKey: 'serving', refAmount: 40, source: 'provider' }]);
@@ -55,11 +55,11 @@ describe('Open Food Facts provider', () => {
 
   it('reports rate limits, outages and missing products', async () => {
     mode = '429';
-    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch }).search('rice', 1), (e: unknown) => e instanceof ProviderError && e.code === 'RATE_LIMITED');
+    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch, jsonpImpl: null }).search('rice', 1), (e: unknown) => e instanceof ProviderError && e.code === 'RATE_LIMITED');
     mode = 'down';
-    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch }).search('rice', 1), (e: unknown) => e instanceof ProviderError && e.code === 'UNAVAILABLE');
+    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch, jsonpImpl: null }).search('rice', 1), (e: unknown) => e instanceof ProviderError && e.code === 'UNAVAILABLE');
     mode = 'ok';
-    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch }).getFood('999'), (e: unknown) => e instanceof ProviderError && e.code === 'NOT_FOUND');
+    await assert.rejects(new OpenFoodFactsProvider({ fetchImpl: offFetch, jsonpImpl: null }).getFood('999'), (e: unknown) => e instanceof ProviderError && e.code === 'NOT_FOUND');
   });
 });
 
@@ -153,5 +153,43 @@ describe('Open Food Facts search (Search-a-licious)', () => {
     }) as typeof fetch;
     await new OpenFoodFactsProvider({ fetchImpl: f }).search('pizza: "large" (cheese)*', 1);
     assert.equal(q, 'pizza large cheese');
+  });
+});
+
+describe('Open Food Facts when the browser can\'t fetch it', () => {
+  const blocked = (async () => { throw new TypeError('Failed to fetch'); }) as typeof fetch;
+
+  it('retries the legacy search with JSONP', async () => {
+    const urls: string[] = [];
+    const p = new OpenFoodFactsProvider({
+      fetchImpl: blocked,
+      jsonpImpl: async (url) => { urls.push(url); return JSON.parse(fixture('off-search-oat.json')); },
+    });
+    const page = await p.search('oat', 1);
+    assert.equal(page.items[0].name, 'Rolled Oats');
+    assert.ok(urls[0].startsWith('https://world.openfoodfacts.org/cgi/search.pl?'));
+  });
+
+  it('uses the search result data when product details can\'t be loaded', async () => {
+    let jsonpCalls = 0;
+    const p = new OpenFoodFactsProvider({
+      fetchImpl: blocked,
+      jsonpImpl: async (url) => {
+        jsonpCalls++;
+        if (url.includes('/cgi/search.pl')) return JSON.parse(fixture('off-search-oat.json'));
+        throw new Error('script error');
+      },
+    });
+    await p.search('oat', 1);
+    const f = await p.getFood('0000000000024');
+    assert.equal(f.name, 'Oat Drink');
+    assert.equal(f.reference.unit, 'ml');
+    assert.ok(Math.abs(f.reference.values.calories! - 192 / 4.184) < 1e-9);
+    assert.ok(jsonpCalls >= 2);
+  });
+
+  it('explains what to do when nothing gets through', async () => {
+    const p = new OpenFoodFactsProvider({ fetchImpl: blocked, jsonpImpl: async () => { throw new Error('blocked'); } });
+    await assert.rejects(p.search('oat', 1), (e: unknown) => e instanceof ProviderError && e.code === 'UNAVAILABLE' && /blocker/.test(e.message));
   });
 });

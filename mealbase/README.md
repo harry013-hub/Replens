@@ -58,7 +58,7 @@ Other commands:
 
 | Command | What it does |
 |---|---|
-| `npm test` | Runs the automated test suite (83 tests). |
+| `npm test` | Runs the automated test suite (86 tests). |
 | `npm run typecheck` | Checks TypeScript types. |
 | `npm run db:migrate` | Applies database migrations (also done automatically at start). |
 | `npm run db:seed` | Loads sample foods + starter recipes. `-- --force` overwrites edited seed recipes. |
