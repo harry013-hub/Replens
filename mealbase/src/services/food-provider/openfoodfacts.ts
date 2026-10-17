@@ -6,7 +6,9 @@
  * - No key. Reads need only an identifying User-Agent; browsers can't set that,
  *   so we send X-User-Agent, which the server's CORS rules explicitly allow.
  * - CORS: the API answers any origin with Access-Control-Allow-Origin.
- * - Full-text search: GET /cgi/search.pl?search_terms=…&json=1 (v1; v2 search has no full text).
+ * - Full-text search: Search-a-licious, GET https://search.openfoodfacts.org/search?q=…
+ *   (fast Elasticsearch service; its CORS middleware allows any http(s) origin), falling back to
+ *   the older, slower GET /cgi/search.pl?search_terms=…&json=1 if it's unavailable.
  *   Product: GET /api/v2/product/{code}.json
  * - Rate limits per IP: 10 searches/min, 15 product reads/min. Exceeding can lead to a ban,
  *   so results are cached and searches are user-initiated only.
@@ -24,6 +26,7 @@ const FIELDS = 'code,product_name,product_name_en,generic_name,brands,nutriments
 
 export interface OffOptions {
   baseUrl?: string;
+  searchBaseUrl?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   pageSize?: number;
@@ -64,10 +67,31 @@ function name(p: Record<string, unknown>): string {
   return n?.trim() ?? 'Unnamed product';
 }
 
+function prettyTag(tag: string): string {
+  // Search-a-licious returns taxonomy tags like "kirkland-signature" or "xx:kirkland-signature".
+  return tag.replace(/^[a-z]{2}:/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function brand(p: Record<string, unknown>): string | null {
-  const b = typeof p.brands === 'string' ? p.brands.split(',')[0]?.trim() : '';
+  const raw = p.brands;
+  if (Array.isArray(raw)) {
+    const first = raw.find((x) => typeof x === 'string' && x.trim()) as string | undefined;
+    return first ? (/[A-Z ]/.test(first) ? first.trim() : prettyTag(first)) : null;
+  }
+  const b = typeof raw === 'string' ? raw.split(',')[0]?.trim() : '';
   return b || null;
 }
+
+/** Store names people type that appear on labels as a brand instead. */
+const STORE_BRANDS: Array<[RegExp, string]> = [
+  [/\bcostco\b/i, 'kirkland'],
+  [/\btrader joe'?s\b/i, "trader joe's"],
+  [/\bwalmart\b/i, 'great value'],
+  [/\btarget\b/i, 'good & gather'],
+  [/\bwhole foods\b/i, '365'],
+  [/\bkroger\b/i, 'kroger'],
+  [/\baldi\b/i, 'aldi'],
+];
 
 export function offServings(p: Record<string, unknown>, unit: ReferenceUnit): Array<Omit<ServingOption, 'id'>> {
   const q = num(p.serving_quantity);
@@ -92,19 +116,21 @@ export class OpenFoodFactsProvider implements FoodProvider {
   readonly label = 'Open Food Facts';
   readonly attribution = OFF_ATTRIBUTION;
   private readonly base: string;
+  private readonly searchBase: string;
   private readonly f: typeof fetch;
   private readonly searches = new Cache<ProviderSearchPage>(15 * 60_000);
   private readonly details = new Cache<ProviderFood>(24 * 60 * 60_000);
 
   constructor(private readonly opts: OffOptions = {}) {
     this.base = (opts.baseUrl ?? 'https://world.openfoodfacts.org').replace(/\/+$/, '');
+    this.searchBase = (opts.searchBaseUrl ?? 'https://search.openfoodfacts.org').replace(/\/+$/, '');
     this.f = opts.fetchImpl ?? ((...a) => fetch(...a));
   }
 
   isConfigured() { return true; }
 
-  private async get(path: string, params: Record<string, string>): Promise<any> {
-    const url = new URL(this.base + path);
+  private async get(path: string, params: Record<string, string>, base = this.base): Promise<any> {
+    const url = new URL(base + path);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.opts.timeoutMs ?? 15_000);
@@ -119,8 +145,11 @@ export class OpenFoodFactsProvider implements FoodProvider {
     } finally {
       clearTimeout(timer);
     }
-    if (res.status === 429 || res.status === 503) {
-      throw new ProviderError('RATE_LIMITED', 'Open Food Facts is busy or the search limit (about 10 searches a minute) was reached. Wait a minute and try again, or add the food manually.', 60);
+    if (res.status === 429) {
+      throw new ProviderError('RATE_LIMITED', 'The Open Food Facts search limit was reached. Wait a minute and try again, or add the food manually.', 60);
+    }
+    if (res.status === 503) {
+      throw new ProviderError('UNAVAILABLE', 'Open Food Facts is busy right now. Wait a moment and try again, or add the food manually.');
     }
     if (res.status === 404) throw new ProviderError('NOT_FOUND', 'That product was not found in Open Food Facts.');
     if (!res.ok) throw new ProviderError('UNAVAILABLE', `Open Food Facts returned an error (${res.status}). Try again shortly.`);
@@ -131,19 +160,56 @@ export class OpenFoodFactsProvider implements FoodProvider {
     }
   }
 
+  /** One Search-a-licious query; falls back to the legacy endpoint if the service is down. */
+  private async searchOnce(q: string, page: number, pageSize: number): Promise<{ products: Array<Record<string, unknown>>; count: number | null }> {
+    try {
+      const body = await this.get('/search', { q, page: String(page), page_size: String(pageSize), langs: 'en', fields: FIELDS }, this.searchBase);
+      if (body && Array.isArray(body.hits)) return { products: body.hits, count: num(body.count) };
+      throw new ProviderError('BAD_RESPONSE', 'Open Food Facts search response had an unexpected format.');
+    } catch (err) {
+      if (err instanceof ProviderError && err.code === 'RATE_LIMITED') throw err;
+      // Search-a-licious unavailable or rejected the query: use the older full-text search.
+      const body = await this.get('/cgi/search.pl', {
+        search_terms: q, search_simple: '1', action: 'process', json: '1', page_size: String(pageSize), page: String(page), fields: FIELDS,
+      });
+      if (!body || !Array.isArray(body.products)) throw new ProviderError('BAD_RESPONSE', 'Open Food Facts search response had an unexpected format.');
+      return { products: body.products, count: num(body.count) };
+    }
+  }
+
   async search(query: string, page: number): Promise<ProviderSearchPage> {
-    const q = query.trim();
+    const q = query.trim().replace(/[:"\\()[\]{}^~*?]/g, ' ').replace(/\s+/g, ' ').trim();
     const key = `${q.toLowerCase()}|${page}`;
     const hit = this.searches.get(key);
     if (hit) return hit;
     const pageSize = this.opts.pageSize ?? 24;
-    const body = await this.get('/cgi/search.pl', {
-      search_terms: q, search_simple: '1', action: 'process', json: '1',
-      page_size: String(pageSize), page: String(page), fields: FIELDS,
-    });
-    if (!body || !Array.isArray(body.products)) throw new ProviderError('BAD_RESPONSE', 'Open Food Facts search response had an unexpected format.');
-    const items = (body.products as Array<Record<string, unknown>>)
-      .filter((p) => typeof p.code === 'string' && p.code)
+
+    // Store names ("costco pizza") are usually printed as a house brand ("Kirkland").
+    const queries = [q];
+    for (const [re, brandName] of STORE_BRANDS) if (re.test(q)) queries.push(q.replace(re, brandName).trim());
+
+    const seen = new Set<string>();
+    const products: Array<Record<string, unknown>> = [];
+    let count: number | null = 0;
+    let lastError: unknown = null;
+    for (const query of queries) {
+      try {
+        let r = await this.searchOnce(query, page, pageSize);
+        // All words must match by default; if nothing matches, accept any of the words.
+        const words = query.split(' ').filter(Boolean);
+        if (r.products.length === 0 && words.length > 1 && page === 1) r = await this.searchOnce(words.join(' OR '), page, pageSize);
+        for (const p of r.products) {
+          const code = typeof p.code === 'string' ? p.code : null;
+          if (code && !seen.has(code)) { seen.add(code); products.push(p); }
+        }
+        count = Math.max(count ?? 0, r.count ?? 0);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (!products.length && lastError) throw lastError;
+
+    const items = products
       .map((p) => {
         const { values } = offNutrients(p.nutriments);
         const unit = refUnit(p);
@@ -154,8 +220,7 @@ export class OpenFoodFactsProvider implements FoodProvider {
       })
       // Products with no nutrition at all aren't useful for logging; list them last.
       .sort((a, b) => Number(b.preview !== null) - Number(a.preview !== null));
-    const count = num(body.count);
-    const result: ProviderSearchPage = { page, totalPages: count === null ? null : Math.max(1, Math.ceil(count / pageSize)), items };
+    const result: ProviderSearchPage = { page, totalPages: count ? Math.max(1, Math.ceil(count / pageSize)) : null, items };
     this.searches.set(key, result);
     return result;
   }

@@ -33,6 +33,5 @@
 
 ## Static mode inside RepLens
 - Data is stored per browser/device in `localStorage` (≈5 MB limit). Clearing site data removes it; there is no sync between devices.
-- On GitHub Pages (no proxy function) food search uses **Open Food Facts**: community-entered data that can be incomplete or wrong, mostly packaged/branded products (weak for raw foods like "banana"), about 10 searches/minute and 15 product lookups/minute per network. The 52 bundled generic foods (sample data) and manual entry fill the gaps.
-- Open Food Facts can't be reached from the build environment either; the mapping follows its server code and docs and is tested with fixtures. Its CORS rules (checked in the openfoodfacts-server nginx config) allow any website origin.
+- On GitHub Pages (no proxy function) the browser calls USDA directly: with the public DEMO_KEY (about 30 searches/hour per network) or the user's own key saved in that browser. Direct browser calls rely on USDA allowing cross-origin requests; this couldn't be verified from the build environment. If it's blocked, search shows "couldn't be reached" and manual entry still works.
 - The function has no rate limiting of its own; heavy public traffic could use up the USDA key's hourly limit (1,000 requests/hour).

@@ -109,3 +109,49 @@ describe('static site without the USDA function (GitHub Pages)', () => {
     assert.equal(p.mode, 'proxy');
   });
 });
+
+describe('Open Food Facts search (Search-a-licious)', () => {
+  it('maps store names to house brands, merges results and tidies brand tags', async () => {
+    const calls: string[] = [];
+    const f = (async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      calls.push(url.host + url.pathname + ' q=' + (url.searchParams.get('q') ?? ''));
+      if (url.host === 'search.openfoodfacts.org' && url.pathname === '/search') {
+        const q = url.searchParams.get('q') ?? '';
+        if (q === 'kirkland pizza') return new Response(fixture('sal-search-kirkland-pizza.json'), { status: 200 });
+        return new Response(JSON.stringify({ hits: [], page: 1, page_size: 24, page_count: 0, took: 1, timed_out: false, count: 0, is_count_exact: true }), { status: 200 });
+      }
+      return new Response('{}', { status: 404 });
+    }) as typeof fetch;
+    const page = await new OpenFoodFactsProvider({ fetchImpl: f }).search('Costco pizza', 1);
+    assert.ok(calls.some((c) => c === 'search.openfoodfacts.org/search q=Costco pizza'));
+    assert.ok(calls.some((c) => c === 'search.openfoodfacts.org/search q=kirkland pizza'));
+    assert.ok(calls.some((c) => c.endsWith('q=Costco OR pizza')), 'retries with any-word matching when nothing matches');
+    assert.equal(page.items.length, 1);
+    assert.equal(page.items[0].name, 'Pepperoni Pizza');
+    assert.equal(page.items[0].brand, 'Kirkland Signature');
+    assert.equal(page.items[0].preview!.values.calories, 268);
+  });
+
+  it('falls back to the legacy search when Search-a-licious is down', async () => {
+    const f = (async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      if (url.host === 'search.openfoodfacts.org') throw new TypeError('Failed to fetch');
+      if (url.pathname === '/cgi/search.pl') return new Response(fixture('off-search-oat.json'), { status: 200 });
+      return new Response('{}', { status: 404 });
+    }) as typeof fetch;
+    const page = await new OpenFoodFactsProvider({ fetchImpl: f }).search('oat', 1);
+    assert.equal(page.items[0].name, 'Rolled Oats');
+  });
+
+  it('strips search syntax characters from what the user typed', async () => {
+    let q = '';
+    const f = (async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      q = url.searchParams.get('q') ?? q;
+      return new Response(JSON.stringify({ hits: [{ code: '1', product_name: 'X', nutriments: {} }], count: 1 }), { status: 200 });
+    }) as typeof fetch;
+    await new OpenFoodFactsProvider({ fetchImpl: f }).search('pizza: "large" (cheese)*', 1);
+    assert.equal(q, 'pizza large cheese');
+  });
+});
