@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.dev/
+data/
+*.sqlite
+*.sqlite-*
+.env
+e2e-shots/

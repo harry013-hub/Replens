@@ -1,0 +1,16 @@
+{
+  "fdcId": 173944,
+  "description": "Bananas, raw",
+  "dataType": "SR Legacy",
+  "foodNutrients": [
+    { "nutrient": { "id": 1008, "number": "208", "name": "Energy", "unitName": "kcal" }, "amount": 89 },
+    { "nutrient": { "id": 1003, "number": "203", "name": "Protein", "unitName": "g" }, "amount": 1.09 },
+    { "nutrient": { "id": 1004, "number": "204", "name": "Total lipid (fat)", "unitName": "g" }, "amount": 0.33 },
+    { "nutrient": { "id": 1005, "number": "205", "name": "Carbohydrate, by difference", "unitName": "g" }, "amount": 22.84 }
+  ],
+  "foodPortions": [
+    { "id": 1, "amount": 1, "gramWeight": 150, "modifier": "cup, sliced", "measureUnit": { "id": 9999, "name": "undetermined", "abbreviation": "undetermined" }, "sequenceNumber": 1 },
+    { "id": 2, "amount": 1, "gramWeight": 118, "modifier": "medium (7\" to 7-7/8\" long)", "measureUnit": { "id": 9999, "name": "undetermined", "abbreviation": "undetermined" }, "sequenceNumber": 2 },
+    { "id": 3, "amount": 1, "gramWeight": null, "modifier": "NLEA serving", "measureUnit": { "id": 9999, "name": "undetermined", "abbreviation": "undetermined" }, "sequenceNumber": 3 }
+  ]
+}

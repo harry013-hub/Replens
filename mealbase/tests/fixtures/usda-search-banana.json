@@ -1,0 +1,42 @@
+{
+  "totalHits": 3,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foods": [
+    {
+      "fdcId": 173944,
+      "description": "Bananas, raw",
+      "dataType": "SR Legacy",
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "KCAL", "value": 89 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 1.09 },
+        { "nutrientId": 1004, "nutrientName": "Total lipid (fat)", "nutrientNumber": "204", "unitName": "G", "value": 0.33 },
+        { "nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "nutrientNumber": "205", "unitName": "G", "value": 22.84 }
+      ]
+    },
+    {
+      "fdcId": 2099999,
+      "description": "BANANA OAT DRINK",
+      "dataType": "Branded",
+      "brandOwner": "Example Foods Inc.",
+      "brandName": "EXAMPLE",
+      "servingSize": 240,
+      "servingSizeUnit": "MLT",
+      "householdServingFullText": "1 cup",
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "KCAL", "value": 50 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 0.42 },
+        { "nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "nutrientNumber": "205", "unitName": "G", "value": 9.58 }
+      ]
+    },
+    {
+      "fdcId": 1105314,
+      "description": "Bananas, ripe and slightly ripe, raw",
+      "dataType": "Foundation",
+      "foodNutrients": [
+        { "nutrientId": 2047, "nutrientName": "Energy (Atwater General Factors)", "nutrientNumber": "957", "unitName": "KCAL", "value": 97 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 0.74 }
+      ]
+    }
+  ]
+}

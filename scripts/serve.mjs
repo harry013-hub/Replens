@@ -15,8 +15,19 @@ const types = {
   '.task': 'application/octet-stream', '.md': 'text/plain; charset=utf-8',
 };
 
+// MealBase food search goes through the same function Netlify runs, so the
+// USDA key stays on the server:  USDA_API_KEY=your-key npm start
+let usda = null;
+async function usdaFunction(req, res) {
+  usda ??= (await import('../netlify/functions/usda.mjs')).default;
+  const r = await usda(new Request(new URL(req.url, `http://localhost:${port}`), { method: req.method }));
+  res.writeHead(r.status, Object.fromEntries(r.headers));
+  res.end(Buffer.from(await r.arrayBuffer()));
+}
+
 http.createServer(async (req, res) => {
   try {
+    if (new URL(req.url, 'http://x').pathname === '/.netlify/functions/usda') return await usdaFunction(req, res);
     let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (path.endsWith('/')) path += 'index.html';
     const file = normalize(join(root, path));
@@ -32,4 +43,7 @@ http.createServer(async (req, res) => {
   } catch {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
   }
-}).listen(port, () => console.log(`RepLens running at http://localhost:${port}`));
+}).listen(port, () => {
+  console.log(`RepLens running at http://localhost:${port}  ·  MealBase at http://localhost:${port}/meals/`);
+  console.log(process.env.USDA_API_KEY ? 'USDA food search: on' : 'USDA food search: off (start with USDA_API_KEY=your-key npm start). Manual entry still works.');
+});

@@ -21,6 +21,10 @@
 
   <!-- ============ HOME ============ -->
   <main id="screen-home" class="screen screen-scroll" aria-labelledby="home-title">
+    <nav class="app-switch" aria-label="Apps">
+      <a href="./" aria-current="page">RepLens</a>
+      <a href="meals/">MealBase</a>
+    </nav>
     <header class="brand">
       <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="24" cy="24" r="9" fill="currentColor"/><path d="M24 3v8M24 37v8M3 24h8M37 24h8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
       <h1 id="home-title">RepLens</h1>
@@ -28,6 +32,12 @@
     <p class="lede">Prop up your phone, pick an exercise, and RepLens counts your reps with the camera.</p>
 
     <div id="env-warning" class="notice notice-warn" hidden></div>
+
+    <a id="meals-today" class="card meals-today" href="meals/" hidden>
+      <span class="small muted">Food logged today</span>
+      <strong id="meals-today-kcal" class="mono">—</strong>
+      <span class="small muted">Open MealBase · logging is optional</span>
+    </a>
 
     <section aria-labelledby="pick-title">
       <h2 id="pick-title" class="section-title">Choose exercise</h2>
@@ -285,5 +295,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/meals-link.js"></script>
 </body>
 </html>
