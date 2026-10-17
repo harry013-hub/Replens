@@ -58,7 +58,7 @@ Other commands:
 
 | Command | What it does |
 |---|---|
-| `npm test` | Runs the automated test suite (74 tests). |
+| `npm test` | Runs the automated test suite (75 tests). |
 | `npm run typecheck` | Checks TypeScript types. |
 | `npm run db:migrate` | Applies database migrations (also done automatically at start). |
 | `npm run db:seed` | Loads sample foods + starter recipes. `-- --force` overwrites edited seed recipes. |
@@ -111,8 +111,8 @@ Food data: U.S. Department of Agriculture, Agricultural Research Service. FoodDa
 In the RepLens repository MealBase runs as a tab at `/meals/` with **no Node server**:
 
 - `src/client/static-main.tsx` mounts the same UI with `src/local/backend.ts`, an in-browser implementation of the `/api/v1/nutrition` API that stores data in `localStorage` (`mealbase.v1`). It reuses the same portion maths, planner, validation and export formats as the server.
-- Food search goes through `src/proxy/usda-proxy.ts`, bundled as a Netlify Function (`../netlify/functions/usda.mjs`) so the `USDA_API_KEY` stays server-side. RepLens's `npm start` runs the same function locally.
+- Food search (`src/local/browser-provider.ts`) uses the USDA proxy function when the host has it (Netlify, or RepLens's `npm start`; the key stays server-side). On hosts without it, such as GitHub Pages, the browser calls USDA directly with the public DEMO_KEY, or with the user's own key saved on that device from Settings.
 - Hash routing (`/meals/#/plan`) works on any static host without rewrite rules.
 - Build it with `npm run build:replens` (writes `../meals` and `../netlify/functions/usda.mjs`).
 
-Limits of this mode: one user per browser/device, no sync between devices (move data with Settings → export/import), and food search needs a host that runs the function (Netlify, or local `npm start`).
+Limits of this mode: one user per browser/device, no sync between devices (move data with Settings → export/import), and without the proxy function food search is limited to the DEMO_KEY rate (about 30 searches/hour) unless the user adds their own key.

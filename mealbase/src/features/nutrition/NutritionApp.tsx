@@ -88,6 +88,7 @@ export function NutritionApp({ apiBaseUrl = '/api/v1/nutrition', routeBase = '/'
   const ctx: NutritionContextValue = {
     api,
     config: boot.config,
+    setConfig: (config) => setBoot({ ...boot, config }),
     me: boot.me,
     prefs: boot.prefs,
     setPrefs: (prefs) => setBoot({ ...boot, prefs }),

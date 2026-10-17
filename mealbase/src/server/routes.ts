@@ -69,6 +69,7 @@ export function buildRouter(d: RouteDeps): Router {
         configured: d.provider.isConfigured(),
         usingDemoKey: Boolean(d.provider.usingDemoKey),
         attribution: d.provider.attribution,
+        mode: 'server',
       },
       sampleFoodsEnabled: config.sampleFoodsEnabled,
       workout: { configured: Boolean(config.workoutAppUrl), url: config.workoutAppUrl, label: config.workoutAppLabel },

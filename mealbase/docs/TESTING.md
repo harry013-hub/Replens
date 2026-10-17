@@ -2,7 +2,7 @@
 
 ## Automated tests (`npm test`)
 
-74 tests using Node's built-in test runner. API tests start a real MealBase server on a random port with an in-memory database and a USDA provider whose network is replaced by fixtures.
+75 tests using Node's built-in test runner. API tests start a real MealBase server on a random port with an in-memory database and a USDA provider whose network is replaced by fixtures.
 
 | Area | File | What is checked |
 |---|---|---|

@@ -33,5 +33,5 @@
 
 ## Static mode inside RepLens
 - Data is stored per browser/device in `localStorage` (≈5 MB limit). Clearing site data removes it; there is no sync between devices.
-- Food search needs the USDA proxy function (Netlify or RepLens's local server). GitHub Pages and Netlify Drop can't run it, so search is off there (manual entry still works).
+- On GitHub Pages (no proxy function) the browser calls USDA directly: with the public DEMO_KEY (about 30 searches/hour per network) or the user's own key saved in that browser. Direct browser calls rely on USDA allowing cross-origin requests; this couldn't be verified from the build environment. If it's blocked, search shows "couldn't be reached" and manual entry still works.
 - The function has no rate limiting of its own; heavy public traffic could use up the USDA key's hourly limit (1,000 requests/hour).

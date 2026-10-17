@@ -111,8 +111,12 @@ try:
         # Plain static host with no USDA function (e.g. GitHub Pages)
         plain = browser.new_page(viewport={"width": 390, "height": 844})
         plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/search")
-        expect(plain.get_by_text("Food database search isn't connected")).to_be_visible()
-        check("without the proxy, search explains and manual entry is offered", plain.get_by_role("button", name="Add manually").is_visible())
+        expect(plain.get_by_text(re.compile("shared demo key"))).to_be_visible()
+        check("without the proxy, search uses USDA directly with the demo key", plain.get_by_text("Food database search isn't connected").count() == 0)
+        check("manual entry is still offered", plain.get_by_role("button", name="Add manually").is_visible())
+        plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/settings")
+        expect(plain.get_by_role("heading", name="USDA food search key")).to_be_visible()
+        check("settings let you add your own key on this device", True)
         browser.close()
 finally:
     for pr in procs:

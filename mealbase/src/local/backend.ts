@@ -56,7 +56,10 @@ export interface StorageLike { getItem(k: string): string | null; setItem(k: str
 
 export interface LocalBackendOptions {
   storage?: StorageLike | null;
-  provider?: (FoodProvider & { probe?: () => Promise<unknown>; usingDemoKey?: boolean }) | null;
+  provider?: (FoodProvider & {
+    probe?: () => Promise<unknown>; usingDemoKey?: boolean; mode?: 'proxy' | 'direct' | null;
+    deviceKey?: () => string | null; setDeviceKey?: (k: string | null) => void;
+  }) | null;
   workout?: { url: string | null; label: string };
   sampleFoodsEnabled?: boolean;
   now?: () => Date;
@@ -198,6 +201,15 @@ export class LocalBackend {
 
     if (is('GET', 'health')) return { body: { ok: true } };
     if (is('GET', 'config')) return { body: await this.config() };
+    if (is('PUT', 'device', 'usda-key')) {
+      if (!this.provider?.setDeviceKey) throw new HttpError(404, 'NOT_FOUND', 'This site keeps its food database key on the server.');
+      const key = (body as { key?: unknown } | undefined)?.key;
+      if (key !== null && (typeof key !== 'string' || !/^[A-Za-z0-9]{20,64}$/.test(key.trim()))) {
+        throw new HttpError(400, 'VALIDATION_ERROR', 'That doesn’t look like a data.gov API key (20–64 letters and numbers).');
+      }
+      try { this.provider.setDeviceKey(key as string | null); } catch { throw new HttpError(507, 'STORAGE_ERROR', 'This browser couldn’t save the key.'); }
+      return { body: await this.config() };
+    }
     if (seg[0] === 'auth') throw new HttpError(404, 'NOT_FOUND', 'This MealBase runs on your device and has no accounts.');
     if (is('GET', 'me')) return { body: this.me() };
     if (is('PATCH', 'me')) {
@@ -355,6 +367,8 @@ export class LocalBackend {
       foodProvider: {
         id: 'usda', configured: Boolean(this.provider?.isConfigured()), usingDemoKey: Boolean(this.provider?.usingDemoKey),
         attribution: this.provider?.attribution ?? 'U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov (public domain, CC0 1.0).',
+        mode: this.provider?.mode ?? 'proxy',
+        deviceKeySet: Boolean(this.provider?.deviceKey?.()),
       },
       sampleFoodsEnabled: this.opts.sampleFoodsEnabled ?? true,
       workout: { configured: Boolean(this.opts.workout?.url), url: this.opts.workout?.url ?? null, label: this.opts.workout?.label ?? 'Workouts' },
