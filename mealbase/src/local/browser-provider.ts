@@ -2,96 +2,51 @@
  * Food search for the browser-only build.
  *
  * 1. If the site has the USDA proxy function (Netlify, or RepLens's `npm start`),
- *    use it — the key stays on the server.
- * 2. Otherwise (GitHub Pages, any plain static host) call USDA FoodData Central
- *    directly from the browser with either the user's own key, saved only on this
- *    device, or USDA's public DEMO_KEY (about 30 requests/hour per network).
- *    No key is ever written into the site's files.
+ *    use USDA FoodData Central through it — the key stays on the server.
+ * 2. Otherwise (GitHub Pages, any plain static host) use Open Food Facts, which
+ *    allows websites to call it directly and needs no key.
+ *    (USDA's API can't be called straight from a browser page.)
  */
-import { UsdaFoodProvider, USDA_ATTRIBUTION } from '../services/food-provider/usda';
-import { ProviderError, type FoodProvider, type ProviderFood, type ProviderSearchPage } from '../services/food-provider/types';
+import { OpenFoodFactsProvider, type OffOptions } from '../services/food-provider/openfoodfacts';
+import type { FoodProvider, ProviderFood, ProviderSearchPage } from '../services/food-provider/types';
 import { RemoteUsdaProvider } from './remote-provider';
-import type { StorageLike } from './backend';
 
-export const DEVICE_KEY_STORAGE = 'mealbase.usdaKey';
+export class BrowserFoodProvider implements FoodProvider {
+  private readonly proxy: RemoteUsdaProvider | null;
+  private readonly off: OpenFoodFactsProvider;
+  private active: FoodProvider | null = null;
 
-export type FoodSearchMode = 'proxy' | 'direct';
-
-export class BrowserUsdaProvider implements FoodProvider {
-  readonly id = 'usda' as const;
-  readonly label = 'USDA FoodData Central';
-  readonly attribution = USDA_ATTRIBUTION;
-  private proxy: RemoteUsdaProvider | null;
-  private resolved: FoodSearchMode | null = null;
-  private direct: UsdaFoodProvider | null = null;
-
-  constructor(private readonly opts: {
-    proxyUrl: string | null;
-    storage: StorageLike | null;
-    fetchImpl?: typeof fetch;
-    usdaBaseUrl?: string;
-  }) {
+  constructor(opts: { proxyUrl: string | null; fetchImpl?: typeof fetch; off?: OffOptions }) {
     this.proxy = opts.proxyUrl ? new RemoteUsdaProvider(opts.proxyUrl, opts.fetchImpl) : null;
+    this.off = new OpenFoodFactsProvider({ fetchImpl: opts.fetchImpl, ...opts.off });
   }
 
-  /** The user's own key saved on this device, if any. */
-  deviceKey(): string | null {
-    try { return this.opts.storage?.getItem(DEVICE_KEY_STORAGE)?.trim() || null; } catch { return null; }
+  /** Decide which database to use (once per page load). */
+  async probe(): Promise<FoodProvider> {
+    if (this.active) return this.active;
+    this.active = this.proxy && (await this.proxy.probe()).configured ? this.proxy : this.off;
+    return this.active;
   }
 
-  setDeviceKey(key: string | null): void {
-    const k = key?.trim() || null;
-    if (k) this.opts.storage?.setItem(DEVICE_KEY_STORAGE, k);
-    else this.opts.storage?.removeItem(DEVICE_KEY_STORAGE);
-    this.direct = null;
+  private get current(): FoodProvider {
+    return this.active ?? this.off;
   }
 
-  async probe(): Promise<FoodSearchMode> {
-    if (this.resolved) return this.resolved;
-    if (this.proxy && (await this.proxy.probe()).configured) this.resolved = 'proxy';
-    else this.resolved = 'direct';
-    return this.resolved;
-  }
-
-  get mode(): FoodSearchMode | null {
-    return this.resolved;
-  }
+  get id() { return this.current.id; }
+  get label() { return this.current.label; }
+  get attribution() { return this.current.attribution; }
+  get mode(): 'proxy' | 'browser' { return this.current === this.proxy ? 'proxy' : 'browser'; }
+  get usingDemoKey() { return this.current === this.proxy ? this.proxy!.usingDemoKey : false; }
 
   isConfigured(): boolean {
-    return this.resolved !== null;
+    return true;
   }
 
-  get usingDemoKey(): boolean {
-    if (this.resolved === 'proxy') return this.proxy?.usingDemoKey ?? false;
-    return !this.deviceKey();
+  async search(query: string, page: number): Promise<ProviderSearchPage> {
+    return (await this.probe()).search(query, page);
   }
 
-  private directProvider(): UsdaFoodProvider {
-    this.direct ??= new UsdaFoodProvider({ apiKey: this.deviceKey() ?? 'DEMO_KEY', baseUrl: this.opts.usdaBaseUrl, fetchImpl: this.opts.fetchImpl });
-    return this.direct;
-  }
-
-  private async run<T>(fn: (p: FoodProvider) => Promise<T>): Promise<T> {
-    const mode = await this.probe();
-    if (mode === 'proxy') return fn(this.proxy!);
-    try {
-      return await fn(this.directProvider());
-    } catch (err) {
-      if (err instanceof ProviderError && err.code === 'RATE_LIMITED' && this.usingDemoKey) {
-        throw new ProviderError('RATE_LIMITED', 'The shared demo key’s hourly limit was reached. Add your own free USDA key in Settings, or add the food manually.', err.retryAfterSeconds);
-      }
-      if (err instanceof ProviderError && err.code === 'NOT_CONFIGURED' && !this.usingDemoKey) {
-        throw new ProviderError('NOT_CONFIGURED', 'USDA rejected the key saved in Settings. Check it, or remove it to use the demo key.');
-      }
-      throw err;
-    }
-  }
-
-  search(query: string, page: number): Promise<ProviderSearchPage> {
-    return this.run((p) => p.search(query, page));
-  }
-
-  getFood(sourceFoodId: string): Promise<ProviderFood> {
-    return this.run((p) => p.getFood(sourceFoodId));
+  async getFood(sourceFoodId: string): Promise<ProviderFood> {
+    return (await this.probe()).getFood(sourceFoodId);
   }
 }

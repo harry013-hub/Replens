@@ -56,17 +56,15 @@ export interface StorageLike { getItem(k: string): string | null; setItem(k: str
 
 export interface LocalBackendOptions {
   storage?: StorageLike | null;
-  provider?: (FoodProvider & {
-    probe?: () => Promise<unknown>; usingDemoKey?: boolean; mode?: 'proxy' | 'direct' | null;
-    deviceKey?: () => string | null; setDeviceKey?: (k: string | null) => void;
-  }) | null;
+  provider?: (FoodProvider & { probe?: () => Promise<unknown>; usingDemoKey?: boolean; mode?: 'proxy' | 'browser' }) | null;
   workout?: { url: string | null; label: string };
   sampleFoodsEnabled?: boolean;
   now?: () => Date;
   newId?: () => string;
 }
 
-const SOURCE_LABEL: Record<Food['source'], string> = { usda: 'USDA FoodData Central', manual: 'Entered by you', sample: 'Sample data (not from USDA)' };
+const SOURCE_LABEL: Record<Food['source'], string> = { usda: 'USDA FoodData Central', off: 'Open Food Facts', manual: 'Entered by you', sample: 'Sample data (approximate)' };
+const PROVIDER_SOURCES = ['usda', 'off'] as const;
 
 function seedState(now: string, tz: string): LocalState {
   const foods: Record<string, Food> = {};
@@ -201,15 +199,6 @@ export class LocalBackend {
 
     if (is('GET', 'health')) return { body: { ok: true } };
     if (is('GET', 'config')) return { body: await this.config() };
-    if (is('PUT', 'device', 'usda-key')) {
-      if (!this.provider?.setDeviceKey) throw new HttpError(404, 'NOT_FOUND', 'This site keeps its food database key on the server.');
-      const key = (body as { key?: unknown } | undefined)?.key;
-      if (key !== null && (typeof key !== 'string' || !/^[A-Za-z0-9]{20,64}$/.test(key.trim()))) {
-        throw new HttpError(400, 'VALIDATION_ERROR', 'That doesn’t look like a data.gov API key (20–64 letters and numbers).');
-      }
-      try { this.provider.setDeviceKey(key as string | null); } catch { throw new HttpError(507, 'STORAGE_ERROR', 'This browser couldn’t save the key.'); }
-      return { body: await this.config() };
-    }
     if (seg[0] === 'auth') throw new HttpError(404, 'NOT_FOUND', 'This MealBase runs on your device and has no accounts.');
     if (is('GET', 'me')) return { body: this.me() };
     if (is('PATCH', 'me')) {
@@ -348,8 +337,8 @@ export class LocalBackend {
       }
       this.mutate((s) => {
         const fresh = seedState(this.nowIso(), s.profile.timezone);
-        // Keep cached USDA foods (not personal); drop everything personal.
-        for (const [id, f] of Object.entries(s.foods)) if (f.source === 'usda') fresh.foods[id] = { ...f, servings: f.servings.filter((x) => x.source !== 'user') };
+        // Keep cached database foods (not personal); drop everything personal.
+        for (const [id, f] of Object.entries(s.foods)) if (f.source === 'usda' || f.source === 'off') fresh.foods[id] = { ...f, servings: f.servings.filter((x) => x.source !== 'user') };
         Object.assign(s, fresh);
       });
       return { status: 204 };
@@ -365,10 +354,10 @@ export class LocalBackend {
       apiVersion: 'v1',
       authMode: 'local',
       foodProvider: {
-        id: 'usda', configured: Boolean(this.provider?.isConfigured()), usingDemoKey: Boolean(this.provider?.usingDemoKey),
+        id: this.provider?.id ?? 'usda', label: this.provider?.label ?? 'USDA FoodData Central',
+        configured: Boolean(this.provider?.isConfigured()), usingDemoKey: Boolean(this.provider?.usingDemoKey),
         attribution: this.provider?.attribution ?? 'U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov (public domain, CC0 1.0).',
-        mode: this.provider?.mode ?? 'proxy',
-        deviceKeySet: Boolean(this.provider?.deviceKey?.()),
+        mode: this.provider?.mode ?? 'browser',
       },
       sampleFoodsEnabled: this.opts.sampleFoodsEnabled ?? true,
       workout: { configured: Boolean(this.opts.workout?.url), url: this.opts.workout?.url ?? null, label: this.opts.workout?.label ?? 'Workouts' },
@@ -502,7 +491,7 @@ export class LocalBackend {
     const all = Object.values(this.state.foods);
     const res: FoodSearchResponse = {
       query: q, page, totalPages: null,
-      provider: { id: 'usda', status: 'ok', message: null, attribution: this.provider?.attribution ?? '' },
+      provider: { id: 'usda', status: 'ok', message: null, attribution: '' },
       results: [],
       mine: page === 1 ? all.filter((f) => f.source === 'manual' && f.name.toLowerCase().includes(needle)).slice(0, 10).map((f) => this.toResult(f)) : [],
       sample: page === 1 && (this.opts.sampleFoodsEnabled ?? true) ? all.filter((f) => f.source === 'sample' && f.name.toLowerCase().includes(needle)).slice(0, 10).map((f) => this.toResult(f)) : [],
@@ -514,13 +503,16 @@ export class LocalBackend {
     }
     try {
       const p = await this.provider.search(q, page);
+      const pid = this.provider.id;
+      res.provider = { ...res.provider, id: pid, label: this.provider.label, attribution: this.provider.attribution };
       res.totalPages = p.totalPages;
       res.results = p.items.map((i) => ({
-        ref: `usda:${i.sourceFoodId}`, name: i.name, brand: i.brand, source: 'usda', sourceLabel: SOURCE_LABEL.usda + (i.dataType ? ` · ${i.dataType}` : ''),
+        ref: `${pid}:${i.sourceFoodId}`, name: i.name, brand: i.brand, source: pid, sourceLabel: SOURCE_LABEL[pid] + (i.dataType && pid === 'usda' ? ` · ${i.dataType}` : ''),
         dataType: i.dataType, preview: i.preview, isSample: false,
       }));
     } catch (err) {
       if (!(err instanceof ProviderError)) throw err;
+      res.provider = { ...res.provider, id: this.provider.id, label: this.provider.label, attribution: this.provider.attribution };
       res.provider.status = err.code === 'NOT_CONFIGURED' ? 'not_configured' : err.code === 'RATE_LIMITED' ? 'rate_limited' : err.code === 'UNAVAILABLE' ? 'unavailable' : 'error';
       res.provider.message = err.message;
     }
@@ -528,19 +520,27 @@ export class LocalBackend {
   }
 
   private cacheProviderFood(s: LocalState, p: ProviderFood): string {
-    const existing = Object.values(s.foods).find((f) => f.source === 'usda' && f.sourceFoodId === p.sourceFoodId);
-    const id = existing?.id ?? `usda:${p.sourceFoodId}`;
+    const source = p.providerId === 'off' ? 'off' : 'usda';
+    const existing = Object.values(s.foods).find((f) => f.source === source && f.sourceFoodId === p.sourceFoodId);
+    const id = existing?.id ?? `${source}:${p.sourceFoodId}`;
     const userServings = existing?.servings.filter((x) => x.source === 'user') ?? [];
     s.foods[id] = {
-      id, source: 'usda', sourceFoodId: p.sourceFoodId, name: p.name, brand: p.brand, dataType: p.dataType, reference: p.reference,
+      id, source, sourceFoodId: p.sourceFoodId, name: p.name, brand: p.brand, dataType: p.dataType, reference: p.reference,
       servings: [...p.servings.map((x, i) => ({ ...x, id: `${id}:p${i}` })), ...userServings], isSample: false, attribution: p.attribution,
     };
     return id;
   }
 
   private async getFood(ref: string): Promise<Food> {
-    if (ref.startsWith('usda:')) {
-      const sourceId = ref.slice(5);
+    const prefix = PROVIDER_SOURCES.find((x) => ref.startsWith(`${x}:`));
+    if (prefix) {
+      const sourceId = ref.slice(prefix.length + 1);
+      if (this.provider && this.provider.id !== prefix) {
+        // A food from the other database (cached earlier) — serve the cached copy.
+        const cached = this.state.foods[ref];
+        if (cached) return cached;
+        throw new HttpError(404, 'NOT_FOUND', 'That food came from a different food database. Search for it again.');
+      }
       if (!this.provider) {
         const cached = this.state.foods[ref];
         if (cached) return cached;

@@ -5,6 +5,7 @@ import { Button, Field, Notice, NutrientList, Spinner } from '../../../shared/ui
 import { useNutrition } from '../app-context';
 import { errorMessage, MEAL_LABELS, useAsync } from '../hooks';
 import { newIdempotencyKey } from '../api/client';
+import { SOURCE_NAME } from '../source-labels';
 
 export function FoodDetail({ foodRef, mealType, date, onAdded, onViewDay }: {
   foodRef: string; mealType: MealType; date: string; onAdded: (name: string) => void; onViewDay: () => void;
@@ -71,14 +72,15 @@ function FoodPortionForm({ food, mealType, date, onAdded, onViewDay, onFoodChang
         <h1>{food.name}</h1>
         <div className="mb-row">
           {food.brand ? <span className="mb-muted">{food.brand}</span> : null}
-          {food.isSample ? <span className="mb-badge mb-badge-sample">Sample data</span> : <span className="mb-badge">{food.source === 'usda' ? 'USDA FoodData Central' : 'Entered by you'}</span>}
-          {food.dataType && !food.isSample ? <span className="mb-badge">{food.dataType}</span> : null}
+          {food.isSample ? <span className="mb-badge mb-badge-sample">Sample data</span> : <span className="mb-badge">{SOURCE_NAME[food.source]}</span>}
+          {food.dataType && food.source === 'usda' ? <span className="mb-badge">{food.dataType}</span> : null}
         </div>
       </header>
 
       <section className="mb-panel mb-stack" aria-labelledby="mb-ref">
         <h2 id="mb-ref">Per {formatNumber(food.reference.quantity, 2)} {referenceUnitLabel(food.reference)}</h2>
         <NutrientList values={food.reference.values} />
+        {food.source === 'off' ? <p className="mb-hint">Entered by Open Food Facts contributors. Check it against the package label if it looks off.</p> : null}
         {food.attribution ? <p className="mb-footnote">{food.attribution}</p> : null}
       </section>
 

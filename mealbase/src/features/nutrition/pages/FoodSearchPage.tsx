@@ -8,6 +8,7 @@ import { useNutrition } from '../app-context';
 import { errorMessage, MEAL_LABELS, mealForNow, todayLocal } from '../hooks';
 import { ApiError } from '../api/client';
 import { FoodDetail } from '../components/FoodDetail';
+import { SOURCE_BADGE } from '../source-labels';
 import { ManualFoodForm } from '../components/ManualFoodForm';
 
 type View = { kind: 'search' } | { kind: 'detail'; ref: string } | { kind: 'manual' };
@@ -116,12 +117,15 @@ export function FoodSearchPage() {
 
       {!config.foodProvider.configured ? (
         <Notice tone="info" title="Food database search isn't connected">
-          This MealBase server has no USDA FoodData Central API key, so only your own foods{config.sampleFoodsEnabled ? ' and development sample data' : ''} can be searched. You can always add a food manually.
+          This MealBase site has no food database connected, so only your own foods{config.sampleFoodsEnabled ? ' and the bundled generic foods' : ''} can be searched. You can always add a food manually.
         </Notice>
       ) : null}
 
-      {config.foodProvider.configured && config.foodProvider.mode === 'direct' && config.foodProvider.usingDemoKey ? (
-        <p className="mb-hint">Searching with USDA's shared demo key (about 30 searches an hour). For more, add your own free key in <a href="#" onClick={(e) => { e.preventDefault(); navigate('/settings'); }}>Settings</a>.</p>
+      {config.foodProvider.id === 'off' ? (
+        <p className="mb-hint">
+          Searches Open Food Facts, a free community database that's strongest for packaged and branded foods.
+          For plain foods like fruit or raw meat, the generic foods list below or Add manually often works better.
+        </p>
       ) : null}
 
       {error ? (
@@ -151,7 +155,7 @@ export function FoodSearchPage() {
       ) : null}
 
       {result?.results.length ? (
-        <ResultGroup title="USDA FoodData Central" items={result.results} onPick={(ref) => setView({ kind: 'detail', ref })}
+        <ResultGroup title={result.provider.label ?? config.foodProvider.label ?? 'Food database'} items={result.results} onPick={(ref) => setView({ kind: 'detail', ref })}
           footer={<>
             {result.totalPages && result.page < result.totalPages ? (
               <Button busy={loading} onClick={() => runSearch(submitted, result.page + 1)}>Show more results</Button>
@@ -162,8 +166,8 @@ export function FoodSearchPage() {
       {result?.mine.length ? <ResultGroup title="Your foods" items={result.mine} onPick={(ref) => setView({ kind: 'detail', ref })} /> : null}
       {result?.sample.length ? (
         <ResultGroup
-          title="Sample data (development only)"
-          note="Approximate values bundled for trying MealBase without an API key. Not from a live database."
+          title="Generic foods (sample data)"
+          note="Approximate values for common ingredients, bundled with MealBase. Not from a live database."
           sample
           items={result.sample}
           onPick={(ref) => setView({ kind: 'detail', ref })}
@@ -177,7 +181,7 @@ export function FoodSearchPage() {
             {recent.map((f) => (
               <button key={f.id} type="button" className="mb-list-item" onClick={() => setView({ kind: 'detail', ref: f.id })}>
                 <span><strong>{f.name}</strong>{f.brand ? <span className="mb-muted"> · {f.brand}</span> : null}</span>
-                {f.isSample ? <span className="mb-badge mb-badge-sample">Sample</span> : <span className="mb-badge">{f.source === 'manual' ? 'Yours' : 'USDA'}</span>}
+                {f.isSample ? <span className="mb-badge mb-badge-sample">Sample</span> : <span className="mb-badge">{SOURCE_BADGE[f.source]}</span>}
               </button>
             ))}
           </div>

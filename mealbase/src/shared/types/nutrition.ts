@@ -60,7 +60,7 @@ export interface ServingOption {
   source: 'provider' | 'user' | 'sample';
 }
 
-export type FoodSource = 'usda' | 'manual' | 'sample';
+export type FoodSource = 'usda' | 'off' | 'manual' | 'sample';
 
 export interface Food {
   id: string;

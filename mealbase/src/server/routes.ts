@@ -66,6 +66,7 @@ export function buildRouter(d: RouteDeps): Router {
       authMode: config.authMode,
       foodProvider: {
         id: 'usda',
+        label: 'USDA FoodData Central',
         configured: d.provider.isConfigured(),
         usingDemoKey: Boolean(d.provider.usingDemoKey),
         attribution: d.provider.attribution,

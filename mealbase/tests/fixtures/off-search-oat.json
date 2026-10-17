@@ -1,0 +1,29 @@
+{
+  "count": 2,
+  "page": 1,
+  "page_size": 24,
+  "products": [
+    {
+      "code": "0000000000017",
+      "product_name": "Rolled Oats",
+      "brands": "Example Mills, Example Group",
+      "product_quantity_unit": "g",
+      "serving_quantity": 40,
+      "serving_quantity_unit": "g",
+      "serving_size": "1/2 cup (40 g)",
+      "nutriments": { "energy-kcal_100g": 375, "proteins_100g": 12.5, "carbohydrates_100g": 67.5, "fat_100g": "7" }
+    },
+    {
+      "code": "0000000000024",
+      "product_name": "Oat Drink",
+      "brands": "Example Dairy-Free",
+      "product_quantity_unit": "ml",
+      "quantity": "1 l",
+      "serving_quantity": 250,
+      "serving_quantity_unit": "ml",
+      "serving_size": "250 ml",
+      "nutriments": { "energy-kj_100g": 192, "proteins_100g": 0.5, "carbohydrates_100g": 6.6 }
+    },
+    { "code": "0000000000031", "product_name": "Oat thing with no data", "nutriments": {} }
+  ]
+}
