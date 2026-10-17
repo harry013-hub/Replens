@@ -3,7 +3,7 @@
 // landmarks driven by window.__fakePose so the full UI pipeline (camera →
 // engine → tracker → UI) can be exercised without the real model.
 // It is never loaded by the real app.
-import { pushupPose, squatPose, pressPose } from '../synth.js';
+import { pushupPose, squatPose, pressPose, curlPose } from '../synth.js';
 
 export const FilesetResolver = {
   async forVisionTasks() { return { fake: true }; },
@@ -21,7 +21,7 @@ export class PoseLandmarker {
     this._last = ts;
     const p = window.__fakePose || { kind: 'none' };
     if (p.kind === 'none') return { landmarks: [] };
-    const lm = p.kind === 'pushup' ? pushupPose(p.angle) : p.kind === 'press' ? pressPose(p.angle) : squatPose(p.angle);
+    const lm = p.kind === 'pushup' ? pushupPose(p.angle) : p.kind === 'press' ? pressPose(p.angle) : p.kind === 'curl' ? curlPose(p.angle, { W: 640, H: 480 }) : squatPose(p.angle, p.W ? { W: p.W, H: p.H } : undefined);
     return { landmarks: [lm] };
   }
   close() {}

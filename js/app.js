@@ -10,6 +10,9 @@ import { Feedback } from './audio.js';
 import { Store } from './storage.js';
 import { SETUP_ILLUSTRATIONS } from './illustrations.js';
 import { MEDIAPIPE_VERSION } from './config.js';
+import { Battle, CAMPAIGN, BATTLE_GOALS, INTERVAL_SECONDS, bossMaxHp, shuffle } from './battle.js';
+import { VoicePlayer } from './voice.js';
+import { mealsTodayKcal } from './meals-link.js';
 
 const $ = (id) => document.getElementById(id);
 const body = document.body;
@@ -37,7 +40,11 @@ const app = {
   calib: null,
   targetHit: false,
   transientUntil: 0,
+  battle: null,      // Skelesquat battle state while in a Campaign battle
 };
+
+const voice = new VoicePlayer();
+const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -147,7 +154,13 @@ function goSetup() {
   const ex = EXERCISES[app.exercise];
   app.phase = 'setup';
   setScreen('setup');
-  $('setup-title').textContent = `${ex.name} setup`;
+  body.classList.toggle('battle', !!app.battle);
+  $('boss-panel').hidden = !app.battle;
+  $('battle-setup').hidden = !app.battle;
+  $('btn-start').textContent = app.battle ? 'Start Battle' : 'Start Workout';
+  $('btn-back').setAttribute('aria-label', app.battle ? 'Back to Campaign' : 'Back to RepLens');
+  if (app.battle) renderBattleSetup();
+  $('setup-title').textContent = app.battle ? 'Skelesquat battle' : `${ex.name} setup`;
   $('setup-instruction').textContent = ex.setupText;
   $('setup-illus').innerHTML = SETUP_ILLUSTRATIONS[app.exercise];
   $('setup-panel').hidden = false;
@@ -155,7 +168,7 @@ function goSetup() {
   $('hud').hidden = true;
   $('paused-overlay').hidden = true;
   $('countdown').hidden = true;
-  $('btn-calibrate').hidden = false;
+  $('btn-calibrate').hidden = !!app.battle;
   hideError();
   app.tracker = new ExerciseTracker(app.exercise, thresholdsFor(app.exercise));
   refreshCameraUi();
@@ -326,7 +339,7 @@ function renderTracking(r) {
 
   let msg = null;
   if (app.phase === 'setup') {
-    msg = r.status === 'good' ? 'Looking good — tap Start Workout' : r.message;
+    msg = r.status === 'good' ? `Looking good — tap ${app.battle ? 'Start Battle' : 'Start Workout'}` : r.message;
   } else if (app.phase === 'active') {
     if (performance.now() < app.transientUntil) return; // keep a short-lived message visible
     if (r.status !== 'good' || r.state === STATES.WAITING) msg = r.message;
@@ -349,14 +362,24 @@ function transient(msg, ms = 1400) {
 function handleEvent(r) {
   if (r.event === 'rep') {
     const el = $('rep-count');
+    if (app.battle && app.battle.battle.phase !== 'active') return;
     el.textContent = String(r.reps);
     el.classList.remove('bump');
     void el.offsetWidth; // restart animation
     el.classList.add('bump');
+    if (app.battle) { battleRep(); return; }
     fx.rep(r.reps);
     renderTarget(r.reps);
   } else if (r.event === 'partial') {
+    if (app.battle) {
+      // Supplied lines: "Go Lower" (a lowering movement that stopped short) / "Try again" (rep doesn't count)
+      voice.play(app.exercise === 'squat' || app.exercise === 'pushup' ? 'goLower' : 'tryAgain');
+      transient('Not counted');
+      return;
+    }
     transient('Not counted — tap Calibrate in setup if your comfortable range isn’t detected');
+  } else if (r.event === 'too-fast') {
+    if (app.battle) { voice.play('tooFast'); transient('Too fast — not counted'); }
   } else if (r.event === 'lost' || r.event === 'gap') {
     transient('Tracking paused — body not clearly visible.', 1800);
   }
@@ -386,12 +409,15 @@ function enterWorkoutUi() {
   $('workout-controls').hidden = false;
   $('hud').hidden = false;
   $('hud-exercise').textContent = EXERCISES[app.exercise].name;
+  $('btn-finish').querySelector('span:last-child').textContent = app.battle ? 'Retreat' : 'Finish';
+  $('trial-strip').hidden = !app.battle;
   syncSoundButton();
   syncSkeletonButton();
 }
 
 function startWorkout() {
   if (!camera.active || !pose.ready) return;
+  if (app.battle) { startBattle(); return; }
   fx.unlock();
   app.tracker = new ExerciseTracker(app.exercise, thresholdsFor(app.exercise));
   app.session = { startedAt: Date.now(), activeMs: 0, activeSince: null };
@@ -418,7 +444,7 @@ function runCountdown(seconds) {
   let n = seconds;
   box.hidden = false;
   $('countdown-num').textContent = String(n);
-  fx.tick();
+  if (!app.battle) fx.tick();
   app.countdownTimer = setInterval(() => {
     n -= 1;
     if (n <= 0) {
@@ -429,7 +455,7 @@ function runCountdown(seconds) {
       return;
     }
     $('countdown-num').textContent = String(n);
-    fx.tick();
+    if (!app.battle) fx.tick();
   }, 1000);
 }
 
@@ -437,7 +463,12 @@ function beginActive() {
   app.phase = 'active';
   app.tracker.resetMovement(); // nothing from setup/countdown carries over
   app.session.activeSince = performance.now();
-  fx.go();
+  if (app.battle) {
+    app.battle.battle.start();
+    voice.startIdle();
+  } else {
+    fx.go();
+  }
   startInference();
 }
 
@@ -458,8 +489,9 @@ function uiTick() {
 }
 
 function pause(reason = '') {
-  if (!(app.phase === 'active' || app.phase === 'countdown')) return;
+  if (!(app.phase === 'active' || app.phase === 'countdown' || app.phase === 'interval')) return;
   if (app.countdownTimer) { clearInterval(app.countdownTimer); app.countdownTimer = null; $('countdown').hidden = true; }
+  if (app.battle) battlePaused();
   const s = app.session;
   if (s?.activeSince != null) { s.activeMs += performance.now() - s.activeSince; s.activeSince = null; }
   app.phase = 'paused';
@@ -498,6 +530,8 @@ async function resume() {
   app.tracker.resetMovement(); // require a stable start pose again
   requestWakeLock();
   startInference();
+  voice.unlock();
+  if (app.battle?.battle.phase === 'interval') { $('paused-overlay').hidden = true; setPauseButton(false); startInterval(); return; }
   runCountdown(3);
 }
 
@@ -509,6 +543,7 @@ function setPauseButton(paused) {
 }
 
 function finish() {
+  if (app.battle) { retreat(); return; }
   if (!app.session) return;
   if (app.countdownTimer) { clearInterval(app.countdownTimer); app.countdownTimer = null; }
   const s = app.session;
@@ -574,11 +609,13 @@ function releaseWakeLock() {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    if (app.phase === 'active' || app.phase === 'countdown') {
+    if (app.phase === 'active' || app.phase === 'countdown' || app.phase === 'interval') {
       pause('Paused because you left the app. Tap Resume when you are back in position.');
     }
     stopInference();
     fx.suspend();
+    voice.stopIdle();
+    voice.stopAll();
     if (app.calib) cancelCalibration();
   } else {
     if (app.phase === 'setup') {
@@ -596,8 +633,10 @@ window.addEventListener('pagehide', () => {
   stopInference();
   camera.stop();
   fx.stopAll();
+  voice.stopIdle();
+  voice.stopAll();
   releaseWakeLock();
-  if (app.phase === 'active' || app.phase === 'countdown') {
+  if (app.phase === 'active' || app.phase === 'countdown' || app.phase === 'interval') {
     // keep the state consistent if the page comes back from the back/forward cache
     pause('Paused because you left the page.');
   }
@@ -610,7 +649,7 @@ window.addEventListener('pageshow', (e) => {
 });
 
 camera.onInterrupted = (reason) => {
-  if (app.phase === 'active' || app.phase === 'countdown') {
+  if (app.phase === 'active' || app.phase === 'countdown' || app.phase === 'interval') {
     pause(`${CAMERA_MESSAGES.interrupted} Tap Resume to continue.`);
     if (reason === 'ended') camera.stop();
   } else if (app.phase === 'setup' && reason === 'ended') {
@@ -655,6 +694,9 @@ function saveThresholds(th) {
 }
 
 function applyFx() {
+  voice.enabled = !!prefs.sound;
+  voice.volume = Math.min(1, (Number(prefs.volume) || 0) * 1.4);
+  if (!voice.enabled) voice.stopAll();
   fx.enabled = !!prefs.sound;
   fx.volume = Number(prefs.volume) || 0;
   fx.speak = !!prefs.speak;
@@ -778,7 +820,11 @@ document.querySelectorAll('[data-target-step]').forEach((b) => b.addEventListene
 }));
 
 $('btn-continue').addEventListener('click', () => { fx.unlock(); goSetup(); });
-$('btn-back').addEventListener('click', () => { stopCamera(); app.phase = 'idle'; renderHome(); setScreen('home'); });
+$('btn-back').addEventListener('click', () => {
+  stopCamera();
+  app.phase = 'idle';
+  if (app.battle) { endBattleUi(); showRoute('campaign'); } else { renderHome(); showRoute('replens'); }
+});
 $('btn-enable-camera').addEventListener('click', enableCamera);
 $('btn-stop-camera').addEventListener('click', stopCamera);
 $('btn-switch-setup').addEventListener('click', switchCamera);
@@ -809,7 +855,7 @@ $('btn-again').addEventListener('click', () => {
   goSetup();
   enableCamera(); // this click is a user gesture, so the camera may reopen directly
 });
-$('btn-home').addEventListener('click', () => { app.phase = 'idle'; renderHome(); setScreen('home'); });
+$('btn-home').addEventListener('click', () => { app.phase = 'idle'; renderHome(); showRoute('replens'); });
 $('btn-rep-minus').addEventListener('click', () => correctReps(-1));
 $('btn-rep-plus').addEventListener('click', () => correctReps(1));
 
@@ -819,6 +865,10 @@ $('confirm-yes').addEventListener('click', () => { store.clearHistory(); closeSh
 
 $('btn-settings').addEventListener('click', openSettings);
 $('btn-settings-home').addEventListener('click', openSettings);
+$('btn-settings-menu').addEventListener('click', openSettings);
+$('btn-enter-battle').addEventListener('click', enterBattle);
+$('btn-victory-campaign').addEventListener('click', () => { $('victory').hidden = true; endBattleUi(); showRoute('campaign'); });
+$('victory').querySelector('a[href="#"]').addEventListener('click', () => { $('victory').hidden = true; endBattleUi(); });
 document.querySelectorAll('#settings [data-close]').forEach((b) => b.addEventListener('click', () => closeSheet('settings')));
 $('set-sound').addEventListener('change', (e) => { prefs.sound = e.target.checked; store.setPref('sound', prefs.sound); applyFx(); syncSoundButton(); });
 $('set-volume').addEventListener('input', (e) => { prefs.volume = Number(e.target.value); store.setPref('volume', prefs.volume); applyFx(); });
@@ -874,7 +924,374 @@ document.addEventListener('keydown', (e) => {
 pose.forceCpu = !!prefs.forceCpu;
 applyFx();
 renderHome();
-setScreen('home');
+window.addEventListener('hashchange', onRoute);
+onRoute();
 
 // Expose for debugging in the console (no data leaves the device).
-window.RepLens = { app, pose, camera, store };
+window.RepLens = { app, pose, camera, store, voice };
+
+// ---------------------------------------------------------------------------
+// Main menu routing (#, #campaign, #replens)
+// ---------------------------------------------------------------------------
+
+function routeName() {
+  const h = location.hash.replace(/^#/, '');
+  return h === 'campaign' || h === 'replens' ? h : 'menu';
+}
+
+/** Leaving the camera flow (browser Back or a menu link): release everything. */
+function leaveCameraFlow() {
+  if (app.battle) {
+    if (app.session && app.battle.battle.phase !== 'won') retreat({ navigate: false });
+    else endBattleUi();
+  } else if (app.session) {
+    finish(); // saves the session as usual
+  }
+  stopCamera();
+  app.phase = 'idle';
+}
+
+function onRoute() {
+  const screen = body.dataset.screen;
+  if (screen === 'setup' || screen === 'workout') leaveCameraFlow();
+  if (!$('victory').hidden) { $('victory').hidden = true; endBattleUi(); }
+  const r = routeName();
+  if (r === 'campaign') { renderCampaign(); setScreen('campaign'); }
+  else if (r === 'replens') { renderHome(); setScreen('home'); }
+  else setScreen('menu');
+}
+
+function showRoute(name) {
+  const hash = name === 'menu' ? '' : `#${name}`;
+  if (location.hash === hash || (!hash && !location.hash)) { onRoute(); return; }
+  if (hash) location.hash = hash; // fires hashchange → onRoute
+  else { history.pushState(null, '', location.pathname + location.search); onRoute(); }
+}
+
+// ---------------------------------------------------------------------------
+// Campaign + Skelesquat boss battle
+// The battle reuses RepLens unchanged: same camera, same pose engine, same
+// ExerciseTracker. It only listens to the tracker's 'rep' events.
+// ---------------------------------------------------------------------------
+
+function todaysCalories() {
+  const t = mealsTodayKcal();
+  return { kcal: t?.kcal ?? 0, entries: t?.entries ?? 0 };
+}
+
+function hpNote(cal, hp) {
+  return cal.entries
+    ? `Set by today's MealBase meals (${Math.round(cal.kcal).toLocaleString()} kcal). It changes the boss's health, not the length of your workout.`
+    : `No meals logged in MealBase today, so Skelesquat starts with his base ${hp} HP.`;
+}
+
+function trialItems(list, order, { current = -1, battle = null } = {}) {
+  list.textContent = '';
+  order.forEach((id, i) => {
+    const li = document.createElement('li');
+    li.className = i < current ? 'done' : i === current ? 'current' : '';
+    const name = document.createElement('span');
+    name.className = 'trial-name';
+    name.textContent = EXERCISES[id].name;
+    const reps = document.createElement('span');
+    reps.className = 'trial-reps';
+    const goal = BATTLE_GOALS[id];
+    reps.textContent = battle && i === current ? `${battle.workoutReps} / ${goal}` : i < current ? `${goal} / ${goal}` : `${goal} reps`;
+    li.append(name, reps);
+    list.append(li);
+  });
+}
+
+function renderCampaign() {
+  const cal = todaysCalories();
+  const hp = bossMaxHp(cal.kcal);
+  $('camp-level').textContent = `Level ${CAMPAIGN.level}`;
+  $('camp-hp').textContent = String(hp);
+  $('camp-hp-note').textContent = hpNote(cal, hp);
+  trialItems($('camp-trials'), Object.keys(BATTLE_GOALS));
+  const wins = prefs.campaign?.wins || 0;
+  $('camp-record').hidden = !wins;
+  $('camp-record').textContent = wins === 1 ? 'Skelesquat defeated once. Fight him again any time.' : `Skelesquat defeated ${wins} times.`;
+}
+
+function enterBattle() {
+  fx.unlock();
+  voice.unlock(); // this is a tap: lets the voice lines play later on iOS
+  const cal = todaysCalories();
+  const maxHp = bossMaxHp(cal.kcal); // locked for this battle
+  const order = window.__TEST_BATTLE_ORDER__ || shuffle(Object.keys(BATTLE_GOALS)); // test hook: fixed order
+  app.battle = {
+    battle: new Battle({ maxHp, order, goals: BATTLE_GOALS }),
+    cal,
+    attackTimer: null,
+    intervalTimer: null,
+    victoryTimer: null,
+    workoutStartActive: 0,
+    workoutStartedAt: 0,
+  };
+  app.exercise = order[0];
+  setBossState('idle');
+  renderHp();
+  goSetup();
+}
+
+function renderBattleSetup() {
+  const b = app.battle;
+  $('bs-hp').textContent = String(b.battle.maxHp);
+  $('bs-hp-note').textContent = b.cal.entries ? `(from today's ${Math.round(b.cal.kcal).toLocaleString()} kcal in MealBase)` : '(base HP: no meals logged today)';
+  trialItems($('bs-order'), b.battle.order, { current: b.battle.index });
+}
+
+function renderTrialStrip() {
+  const b = app.battle;
+  if (!b) return;
+  trialItems($('trial-strip'), b.battle.order, { current: b.battle.index, battle: b.battle });
+}
+
+function renderHp() {
+  const b = app.battle?.battle;
+  if (!b) return;
+  const now = b.hpDisplay;
+  $('hp-now').textContent = String(now);
+  $('hp-max').textContent = String(b.maxHp);
+  const pct = (b.hp / b.maxHp) * 100;
+  $('hp-fill').style.width = `${pct}%`;
+  $('hp-meter').setAttribute('aria-valuenow', String(Math.round(pct)));
+  $('hp-meter').classList.toggle('low', pct <= 25);
+}
+
+function renderBattleCounter() {
+  const b = app.battle.battle;
+  $('rep-count').textContent = String(b.workoutReps);
+  $('hud-exercise').textContent = EXERCISES[b.exercise].name;
+  $('target-wrap').hidden = false;
+  $('target-text').textContent = `of ${b.goal}`;
+  const pct = Math.round((b.workoutReps / b.goal) * 100);
+  $('target-fill').style.width = `${pct}%`;
+  $('target-bar').setAttribute('aria-valuenow', String(pct));
+  renderTrialStrip();
+}
+
+function setBossState(state) {
+  $('boss-stage').dataset.state = state;
+}
+
+function startBattle() {
+  const b = app.battle;
+  app.tracker = new ExerciseTracker(app.exercise, thresholdsFor(app.exercise));
+  app.session = { startedAt: Date.now(), activeMs: 0, activeSince: null };
+  b.workoutStartActive = 0;
+  b.workoutStartedAt = Date.now();
+  $('hud-timer').textContent = '0:00';
+  $('hud-state').textContent = '';
+  enterWorkoutUi();
+  renderBattleCounter();
+  renderHp();
+  requestWakeLock();
+  startInference();
+  clearInterval(app.uiTimer);
+  app.uiTimer = setInterval(uiTick, 250);
+  runBattleCountdown();
+}
+
+/** 3 → 2 → 1 → GO! with the supplied "Ready set go" recording. */
+function runBattleCountdown() {
+  app.phase = 'countdown';
+  clearInterval(app.countdownTimer);
+  setPauseButton(false);
+  $('btn-switch-workout').disabled = true;
+  $('paused-overlay').hidden = true;
+  const box = $('countdown');
+  const steps = ['3', '2', '1', 'GO!'];
+  let i = 0;
+  box.hidden = false;
+  box.classList.remove('go');
+  $('countdown-num').textContent = steps[0];
+  voice.play('countdown'); // started inside the Start Battle tap
+  app.countdownTimer = setInterval(() => {
+    i += 1;
+    if (i >= steps.length) {
+      clearInterval(app.countdownTimer);
+      app.countdownTimer = null;
+      box.hidden = true;
+      box.classList.remove('go');
+      beginActive();
+      return;
+    }
+    $('countdown-num').textContent = steps[i];
+    box.classList.toggle('go', steps[i] === 'GO!');
+  }, 1000);
+}
+
+function battleRep() {
+  const b = app.battle;
+  const res = b.battle.registerRep();
+  if (!res.accepted) return;
+  const el = $('rep-count');
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  renderBattleCounter();
+  renderHp();
+  if (res.attack) playAttack(res.attackDamage);
+  if (res.workoutDone) saveBattleWorkout();
+  if (res.battleWon) { victory(); return; }
+  if (res.workoutDone) {
+    voice.play('wellDone', { queue: true });
+    startInterval();
+    return;
+  }
+  if (res.halfway) voice.play('halfway');
+  else if (res.motivational) voice.play('motivational');
+}
+
+function playAttack(damage) {
+  const b = app.battle;
+  const stage = $('boss-stage');
+  clearTimeout(b.attackTimer);
+  setBossState('hit');
+  stage.classList.remove('hit');
+  if (!reducedMotion()) { void stage.offsetWidth; stage.classList.add('hit'); }
+  $('boss-hit').hidden = false;
+  const pop = $('dmg-pop');
+  pop.textContent = `-${Math.max(1, Math.round(damage))}`;
+  pop.hidden = false;
+  voice.play('hit');
+  b.attackTimer = setTimeout(() => {
+    if (!app.battle) return;
+    if (app.battle.battle.phase !== 'won') setBossState('idle');
+    stage.classList.remove('hit');
+    $('boss-hit').hidden = true;
+    pop.hidden = true;
+  }, 950);
+}
+
+function saveBattleWorkout() {
+  const b = app.battle;
+  const reps = b.battle.workoutReps;
+  if (!reps) return;
+  store.addSession({
+    exercise: b.battle.exercise, reps, detectedReps: reps,
+    durationMs: Math.max(0, activeMs() - b.workoutStartActive),
+    startedAt: b.workoutStartedAt, endedAt: Date.now(),
+  });
+}
+
+/** Exactly 5 seconds between workouts; no reps are accepted meanwhile. */
+function startInterval() {
+  const b = app.battle;
+  const s = app.session;
+  if (s?.activeSince != null) { s.activeMs += performance.now() - s.activeSince; s.activeSince = null; }
+  clearInterval(b.intervalTimer);
+  app.phase = 'interval';
+  voice.stopIdle();
+  app.tracker.resetMovement();
+  const next = b.battle.order[b.battle.index + 1];
+  app.exercise = next; // positioning guidance during the break is for the next workout
+  $('interval-next').textContent = EXERCISES[next].name;
+  $('interval-tip').textContent = EXERCISES[next].setupText;
+  $('hud-state').textContent = '';
+  let n = INTERVAL_SECONDS;
+  $('interval-num').textContent = String(n);
+  $('interval').hidden = false;
+  b.intervalTimer = setInterval(() => {
+    n -= 1;
+    if (n <= 0) {
+      clearInterval(b.intervalTimer);
+      b.intervalTimer = null;
+      $('interval').hidden = true;
+      nextBattleWorkout();
+      return;
+    }
+    $('interval-num').textContent = String(n);
+  }, 1000);
+}
+
+function nextBattleWorkout() {
+  const b = app.battle;
+  if (!b.battle.nextWorkout()) return;
+  app.exercise = b.battle.exercise;
+  app.tracker = new ExerciseTracker(app.exercise, thresholdsFor(app.exercise));
+  b.workoutStartActive = activeMs();
+  b.workoutStartedAt = Date.now();
+  renderBattleCounter();
+  beginActive(); // tracker requires a stable start position before counting
+}
+
+function battlePaused() {
+  const b = app.battle;
+  if (b.intervalTimer) { clearInterval(b.intervalTimer); b.intervalTimer = null; $('interval').hidden = true; }
+  voice.stopIdle();
+  voice.stopAll();
+}
+
+function victory() {
+  const b = app.battle;
+  const s = app.session;
+  if (s?.activeSince != null) { s.activeMs += performance.now() - s.activeSince; s.activeSince = null; }
+  clearInterval(app.uiTimer);
+  app.phase = 'finished';
+  stopInference();
+  camera.stop();
+  overlay.clear();
+  releaseWakeLock();
+  voice.stopIdle();
+  clearTimeout(b.attackTimer);
+  $('boss-hit').hidden = true;
+  setBossState('defeated');
+  renderHp();
+  // Supplied lines: one of the two death sounds, then clapping, then "Level Up".
+  voice.play('death');
+  voice.play('clapping', { queue: true });
+  voice.play('levelUp', { queue: true });
+  const wins = (prefs.campaign?.wins || 0) + 1;
+  prefs.campaign = { ...(prefs.campaign || {}), wins, lastWinAt: Date.now() };
+  store.setPref('campaign', prefs.campaign);
+  $('victory-level').textContent = `Level ${CAMPAIGN.level}`;
+  $('victory-text').textContent = 'Skelesquat is defeated! Every one of your reps landed.';
+  $('victory-reps').textContent = String(b.battle.totalReps);
+  $('victory-time').textContent = fmtDuration(s?.activeMs || 0);
+  app.session = null;
+  b.victoryTimer = setTimeout(() => { $('victory').hidden = false; }, reducedMotion() ? 300 : 1800);
+}
+
+function retreat({ navigate = true } = {}) {
+  const b = app.battle;
+  if (!b) return;
+  if (b.battle.phase === 'active' || b.battle.phase === 'interval') {
+    if (b.battle.phase === 'active') saveBattleWorkout(); // keep the reps done so far in history
+    b.battle.end();
+  }
+  clearInterval(app.uiTimer);
+  if (app.countdownTimer) { clearInterval(app.countdownTimer); app.countdownTimer = null; }
+  app.session = null;
+  stopInference();
+  camera.stop();
+  overlay.clear();
+  releaseWakeLock();
+  endBattleUi();
+  toast('You retreated. Skelesquat awaits your return.');
+  if (navigate) showRoute('campaign');
+}
+
+function endBattleUi() {
+  const b = app.battle;
+  if (b) {
+    clearTimeout(b.attackTimer);
+    clearInterval(b.intervalTimer);
+    clearTimeout(b.victoryTimer);
+  }
+  voice.stopIdle();
+  voice.stopAll();
+  app.battle = null;
+  body.classList.remove('battle');
+  $('boss-panel').hidden = true;
+  $('battle-setup').hidden = true;
+  $('trial-strip').hidden = true;
+  $('interval').hidden = true;
+  $('countdown').hidden = true;
+  $('countdown').classList.remove('go');
+  setBossState('idle');
+  if (camera.active || app.phase !== 'finished') stopCamera();
+  app.phase = 'idle';
+}

@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --disable-warning=ExperimentalWarning --import tsx --test \"tests/**/*.test.ts\"",
     "build:static": "node scripts/build-static.mjs",
-    "build:replens": "node scripts/build-static.mjs --out ../meals --function ../netlify/functions/usda.mjs --theme dark"
+    "build:replens": "node scripts/build-static.mjs --out ../meals --function ../netlify/functions/usda.mjs --theme light"
   },
   "dependencies": {
     "react": "^19.2.0",

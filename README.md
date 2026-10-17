@@ -1,3 +1,22 @@
+# Tracker-Fit
+
+Tracker-Fit is a hand-drawn fantasy fitness game built on the existing **RepLens** camera rep counter and the **MealBase** food log, which keep working exactly as before.
+
+- **Main menu**: the site now opens on the menu, with the Tracker-Fit logo and buttons for Campaign, RepLens and MealBase. RepLens is still at `#replens` and MealBase at `meals/`.
+- **Campaign**: shows Level 1 and the current boss, Skelesquat. His health comes from today's MealBase calories: `clamp(100 + kcal / 10, 100, 350)`. With no meals logged he has 100 HP. Calories only change his health numbers, never the workout length.
+- **Boss battle**: the existing RepLens screen with the camera and rep counter on the left, and Skelesquat with his health bar on the right (stacked on phones).
+  - **Workouts**: the four existing RepLens exercises in a random order each battle: squats 15, push-ups 10, bicep curls 12, shoulder press 10. That's 47 reps in total.
+  - **Damage**: each counted rep removes 1/47 of his starting health, so he reaches exactly 0 on the final rep of the fourth workout.
+  - **Attacks**: a hit animation and voice line play every 4 reps, and any leftover damage lands when a workout ends.
+  - **Timing**: a 3, 2, 1, GO! countdown with the Ready Set Go recording at the start, and a 5-second break between workouts (none after the last).
+  - **Voice lines**: idle lines about every 8 s, damage lines on hits, and a motivational line every 5 reps. Each supplied clip is matched to the condition in its file name (`js/voice.js`), and only one plays at a time.
+- **Style**: hand-drawn medieval look across every screen (`css/fantasy.css`), with MealBase restyled the same way (`css/mealbase-fantasy.css`, design tokens only).
+- **Assets**: supplied art, font and voice lines are in `assets/fantasy/`, `assets/fonts/` and `assets/audio/`.
+
+Battle rules are in `js/battle.js` (unit-tested in `tests/battle.test.js`). The voice player is in `js/voice.js` (`tests/voice.test.js`), and the full battle flow is covered by `npm run test:browser`.
+
+---
+
 # RepLens
 
 A mobile-first website that uses your phone's (or computer's) camera to count **push-ups**, **squats**, **bicep curls** and **shoulder presses** automatically. Pose tracking runs entirely in the browser with Google's MediaPipe Pose Landmarker. Video is never recorded or uploaded.

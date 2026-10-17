@@ -91,7 +91,7 @@ def main():
             page = ctx.new_page()
             errors = []
             page.on("pageerror", lambda e: errors.append(str(e)))
-            page.goto(base)
+            page.goto(base + "#replens")
             page.wait_for_timeout(300)
             check(f"{name}: home has no horizontal scroll", no_hscroll(page))
             check(f"{name}: no JS errors on load", not errors, "; ".join(errors))
@@ -112,7 +112,7 @@ def main():
         route_model(page, ok=False)
         page.route("**/cdn.jsdelivr.net/**", lambda r: r.abort())
         page.route("**/storage.googleapis.com/**", lambda r: r.abort())
-        page.goto(base)
+        page.goto(base + "#replens")
         page.click("#btn-continue")
         page.wait_for_timeout(200)
         check("setup screen shows exercise instructions", "side view works best" in page.inner_text("#setup-instruction"))
@@ -137,7 +137,7 @@ def main():
             ctx = browser.new_context(**iphone); page = ctx.new_page(); page.add_init_script(GUM_SPY)
             page.add_init_script(f"window.__gumError = '{errname}';")
             route_model(page)
-            page.goto(base); page.click("#btn-continue"); page.click("#btn-enable-camera")
+            page.goto(base + "#replens"); page.click("#btn-continue"); page.click("#btn-enable-camera")
             page.wait_for_selector("#cam-error:not([hidden])", timeout=5000)
             txt = page.inner_text("#cam-error")
             check(f"{errname} → clear message", needle.lower() in txt.lower(), txt[:90])
@@ -150,7 +150,7 @@ def main():
         b2 = p.chromium.launch(args=["--host-resolver-rules=MAP phone-test.lan 127.0.0.1"])
         ctx = b2.new_context(**iphone); page = ctx.new_page()
         try:
-            page.goto(f"http://phone-test.lan:{port}/", timeout=8000)
+            page.goto(f"http://phone-test.lan:{port}/#replens", timeout=8000)
             secure = page.evaluate("window.isSecureContext")
             warn = page.inner_text("#env-warning") if page.is_visible("#env-warning") else ""
             check("plain-HTTP network address is flagged as insecure", (not secure) and "HTTPS" in warn, f"secure={secure}")
@@ -164,7 +164,7 @@ def main():
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         route_model(page, ok=True)
-        page.goto(base)
+        page.goto(base + "#replens")
         page.click("[data-target-step='5']"); page.click("[data-target-step='5']")  # target 10
         page.click("#btn-continue")
         page.evaluate("window.__fakePose = {kind:'pushup', angle:170}")
@@ -273,7 +273,7 @@ def main():
         # ---------- 7. Settings sheet + thresholds validation + dev panel
         ctx = browser.new_context(**iphone); page = ctx.new_page()
         route_model(page)
-        page.goto(base)
+        page.goto(base + "#replens")
         page.click("#btn-settings-home")
         page.fill("#th-topExit", "160"); page.click("#th-save")
         check("invalid thresholds rejected", page.is_visible("#th-error"))
@@ -286,13 +286,13 @@ def main():
         # ---------- 8. Storage unavailable
         ctx = browser.new_context(**iphone); page = ctx.new_page()
         page.add_init_script("Object.defineProperty(window, 'localStorage', {get(){ throw new Error('blocked'); }});")
-        page.goto(base); page.wait_for_timeout(300)
+        page.goto(base + "#replens"); page.wait_for_timeout(300)
         check("storage unavailable → warning shown, app still loads", page.is_visible("#storage-note"))
         ctx.close()
 
         # ---------- 9. Squat setup + calibration button
         ctx = browser.new_context(**iphone); page = ctx.new_page(); route_model(page)
-        page.goto(base); page.click("[data-exercise='squat']"); page.click("#btn-continue")
+        page.goto(base + "#replens"); page.click("[data-exercise='squat']"); page.click("#btn-continue")
         check("squat instructions shown", "shoulders, hips, knees, and ankles" in page.inner_text("#setup-instruction"))
         page.click("#btn-enable-camera")
         page.wait_for_function("!document.getElementById('btn-calibrate').disabled", timeout=10000)
@@ -302,7 +302,7 @@ def main():
 
         # ---------- 10. Shoulder press end-to-end (angle rises during the rep)
         ctx = browser.new_context(**iphone); page = ctx.new_page(); route_model(page)
-        page.goto(base); page.click("[data-exercise='press']"); page.click("#btn-continue")
+        page.goto(base + "#replens"); page.click("[data-exercise='press']"); page.click("#btn-continue")
         check("press instructions shown", "room above your head" in page.inner_text("#setup-instruction"))
         page.evaluate("window.__fakePose = {kind:'press', angle:85}")
         page.click("#btn-enable-camera")
@@ -330,6 +330,176 @@ def main():
         page.click("#btn-back")
         page.screenshot(path=f"{OUT}/iphone-home-4.png", full_page=True)
         ctx.close()
+
+        # ---------- 11. Tracker-Fit main menu + Campaign
+        ctx = browser.new_context(**iphone); page = ctx.new_page(); page.add_init_script(GUM_SPY)
+        page.goto(base); page.wait_for_timeout(400)
+        check("site opens on the main menu with the Tracker-Fit logo", page.is_visible("#screen-menu .menu-logo") and page.evaluate("document.querySelector('.menu-logo').naturalWidth > 0"))
+        check("menu has Campaign, RepLens and MealBase", all(page.is_visible(s) for s in ["#menu-campaign", "#menu-replens", "#menu-mealbase"]))
+        check("main menu: no horizontal scroll", no_hscroll(page))
+        check("main menu: tap targets >= 44px", not small_targets(page), json.dumps(small_targets(page)))
+        check("supplied heading font loads", page.evaluate("document.fonts.check('20px \"Trackfi Handdrawn\"')"))
+        page.click("#menu-campaign"); page.wait_for_timeout(300)
+        check("Campaign shows Level 1 and Skelesquat", "Level 1" in page.inner_text("#camp-level") and page.is_visible("#camp-sprite"))
+        check("no meals logged → base HP 100", page.inner_text("#camp-hp") == "100")
+        check("campaign: no horizontal scroll", no_hscroll(page))
+        page.go_back(); page.wait_for_timeout(200)
+        check("browser Back returns to the menu", page.is_visible("#screen-menu"))
+        page.click("#menu-replens"); page.wait_for_timeout(200)
+        check("RepLens still reachable directly", page.is_visible("#btn-continue"))
+        check("menu/campaign never request the camera", page.evaluate("window.__gum.length") == 0)
+        ctx.close()
+
+        # ---------- 12. Full Skelesquat battle driven by RepLens rep events (fake pose model)
+        AUDIO_SPY = """
+        window.__clips = [];
+        const realPlay = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function () {
+          if (!(this instanceof HTMLAudioElement)) return realPlay.call(this);
+          if (this.muted) return Promise.resolve();
+          const name = decodeURIComponent((this.src || '').split('/').pop());
+          window.__clips.push({ name, t: performance.now() });
+          const el = this; clearTimeout(el.__t);
+          el.__t = setTimeout(() => el.dispatchEvent(new Event('ended')), 350);
+          return Promise.resolve();
+        };
+        const realPause = HTMLMediaElement.prototype.pause;
+        HTMLMediaElement.prototype.pause = function () { if (this instanceof HTMLAudioElement) clearTimeout(this.__t); return realPause.call(this); };
+        window.__intervals = 0;
+        document.addEventListener('DOMContentLoaded', () => new MutationObserver(() => {
+          const el = document.getElementById('interval');
+          if (el && !el.hidden && !el.__seen) { el.__seen = true; window.__intervals++; }
+          if (el && el.hidden) el.__seen = false;
+        }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['hidden'] }));
+        """
+        MEALS = """
+        const d = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        localStorage.setItem('mealbase.v1', JSON.stringify({ version: 1, profile: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          logs: [{ localDate: d, nutrition: { calories: 900 } }, { localDate: d, nutrition: { calories: 340 } }] }));
+        window.__TEST_BATTLE_ORDER__ = ['press', 'pushup', 'squat', 'curl'];
+        """
+        ctx = browser.new_context(**iphone); page = ctx.new_page(); page.add_init_script(GUM_SPY)
+        page.add_init_script(AUDIO_SPY); page.add_init_script(MEALS); route_model(page)
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(base + "#campaign"); page.wait_for_timeout(300)
+        check("boss HP from MealBase calories (1,240 kcal → 224)", page.inner_text("#camp-hp") == "224", page.inner_text("#camp-hp"))
+        page.evaluate("window.__fakePose = {kind:'press', angle:85}")
+        page.click("#btn-enter-battle")
+        check("battle setup shows the locked HP and the 4 trials", page.inner_text("#bs-hp") == "224" and page.locator("#bs-order li").count() == 4)
+        check("Start Battle disabled before camera/model are ready", page.is_disabled("#btn-start"))
+        page.click("#btn-enable-camera")
+        page.wait_for_function("!document.getElementById('btn-start').disabled", timeout=10000)
+        check("boss panel visible with full health", page.is_visible("#boss-panel") and page.inner_text("#hp-now") == "224")
+        page.screenshot(path=f"{OUT}/battle-setup.png")
+        page.click("#btn-start")
+        seen = set()
+        for _ in range(14):
+            if page.is_visible("#countdown"): seen.add(page.inner_text("#countdown-num"))
+            page.wait_for_timeout(250)
+        check("countdown shows 3, 2, 1, GO!", {"3", "2", "1", "GO!"} <= seen, str(sorted(seen)))
+        check("Ready Set Go line plays with the countdown", page.evaluate("window.__clips[0] && window.__clips[0].name.startsWith('Read set go')"))
+
+        KINDS = {"press": (85, 170), "pushup": (172, 75), "squat": (176, 80), "curl": (170, 45)}
+        def rep(kind, n=1):
+            top, bot = KINDS[kind]
+            for _ in range(n):
+                for a in [top + (bot - top) * f for f in (0.3, 0.6, 0.9, 1, 1)]:
+                    page.evaluate(f"window.__fakePose = {{kind:'{kind}', angle:{a}}}"); page.wait_for_timeout(85)
+                for a in [top + (bot - top) * f for f in (0.6, 0.2, 0, 0, 0, 0)]:
+                    page.evaluate(f"window.__fakePose = {{kind:'{kind}', angle:{a}}}"); page.wait_for_timeout(85)
+        def settle(kind):
+            page.evaluate(f"window.__fakePose = {{kind:'{kind}', angle:{KINDS[kind][0]}}}"); page.wait_for_timeout(900)
+
+        page.wait_for_selector("#countdown", state="hidden", timeout=8000)
+        settle("press")
+        rep("press", 4)
+        page.wait_for_timeout(200)
+        check("4 presses counted", page.inner_text("#rep-count") == "4", page.inner_text("#rep-count"))
+        hp4 = int(page.inner_text("#hp-now"))
+        check("HP drops by 4/47 of max (224 → 205)", hp4 == 205, str(hp4))
+        check("attack after 4 reps: hit sprite + hit line", page.get_attribute("#boss-stage", "data-state") == "hit" and page.evaluate("window.__clips.some(c => c.name.startsWith('Boss 1 hit'))"))
+        page.screenshot(path=f"{OUT}/battle-hit.png")
+        # change MealBase mid-battle: max HP must stay locked
+        page.evaluate("localStorage.setItem('mealbase.v1', JSON.stringify({version:1, logs:[]}))")
+        rep("press", 1)
+        check("halfway line at 5 of 10 reps", page.evaluate("window.__clips.some(c => c.name.startsWith('Halfway'))"))
+        rep("press", 5)
+        page.wait_for_timeout(200)
+        check("max HP stays locked during the battle", page.inner_text("#hp-max") == "224")
+        check("workout goal reached → 5-second interval", page.is_visible("#interval") and page.inner_text("#interval-next") == "Push-ups")
+        page.screenshot(path=f"{OUT}/battle-interval.png")
+        rep("press", 2)  # moving during the interval must not count anywhere
+        t0 = page.evaluate("performance.now()")
+        page.wait_for_selector("#interval", state="hidden", timeout=8000)
+        dt = page.evaluate("performance.now()") - t0
+        check("interval lasts about 5 s", 2500 < dt + 2 * 11 * 85 < 6000, f"{dt:.0f} ms after reps")
+        check("next workout starts at 0 with its own goal", page.inner_text("#rep-count") == "0" and page.inner_text("#hud-exercise") == "Push-ups" and "of 10" in page.inner_text("#target-text"))
+        check("reps during the interval did not count", page.evaluate("RepLens.app.battle.battle.totalReps") == 10)
+        settle("pushup"); rep("pushup", 10)
+        page.wait_for_selector("#interval:not([hidden])", timeout=4000)
+        page.wait_for_selector("#interval", state="hidden", timeout=8000)
+        settle("squat"); rep("squat", 15)
+        page.wait_for_timeout(300)
+        check("after 3 workouts the boss still has HP", int(page.inner_text("#hp-now")) > 0)
+        page.wait_for_selector("#interval", state="hidden", timeout=8000)
+        settle("curl"); rep("curl", 11)
+        page.wait_for_timeout(200)
+        check("one rep before the end: HP not yet 0", int(page.inner_text("#hp-now")) >= 1 and page.is_hidden("#victory"))
+        rep("curl", 1)
+        page.wait_for_timeout(400)
+        check("final rep of workout 4 → HP exactly 0", page.inner_text("#hp-now") == "0" and page.get_attribute("#boss-stage", "data-state") == "defeated")
+        check("exactly 3 intervals (none after workout 4)", page.evaluate("window.__intervals") == 3, str(page.evaluate("window.__intervals")))
+        page.wait_for_selector("#victory:not([hidden])", timeout=5000)
+        page.wait_for_timeout(1300)
+        names = page.evaluate("window.__clips.map(c => c.name)")
+        check("death line, then clapping, then Level Up", any(n.startswith("Boss 1 death") for n in names) and any(n.startswith("Clapping") for n in names) and any(n.startswith("Level Up") for n in names), json.dumps(names[-4:]))
+        motiv = [n for n in names if "(good)" in n and not n.startswith("Level Up")]
+        check("motivational lines played during the battle", len(motiv) >= 3, str(len(motiv)))
+        check("idle/hit/etc only from mapped files", all(n.endswith(".m4a") for n in names))
+        check("victory shows 47 reps", page.inner_text("#victory-reps") == "47")
+        check("victory releases the camera", page.evaluate("window.__tracks.every(t => t.readyState === 'ended')"))
+        check("each workout saved to RepLens history", page.evaluate("RepLens.store.sessions.length") == 4)
+        page.screenshot(path=f"{OUT}/battle-victory.png")
+        page.click("#btn-victory-campaign"); page.wait_for_timeout(300)
+        check("back on Campaign with the win recorded", page.is_visible("#screen-campaign") and "defeated once" in page.inner_text("#camp-record"))
+        check("new battle starts fresh (HP from current MealBase data)", page.inner_text("#camp-hp") == "100")
+        check("no JS errors during the battle", not errors, "; ".join(errors[:3]))
+
+        # retreat mid-battle
+        page.evaluate("window.__fakePose = {kind:'press', angle:85}")
+        page.click("#btn-enter-battle"); page.click("#btn-enable-camera")
+        page.wait_for_function("!document.getElementById('btn-start').disabled", timeout=10000)
+        check("second battle starts at full HP", page.inner_text("#hp-now") == "100" and page.inner_text("#hp-max") == "100")
+        page.click("#btn-start"); page.wait_for_selector("#countdown", state="hidden", timeout=8000)
+        settle("press"); rep("press", 2)
+        page.click("#btn-finish"); page.wait_for_timeout(400)
+        check("Retreat returns to Campaign and releases the camera", page.is_visible("#screen-campaign") and page.evaluate("window.__tracks.every(t => t.readyState === 'ended')"))
+        n_before = page.evaluate("window.__clips.length"); page.wait_for_timeout(9000)
+        check("no voice lines keep playing after leaving the battle", page.evaluate("window.__clips.length") == n_before)
+        ctx.close()
+
+        # ---------- 13. Battle layout: desktop two columns, phone stacked
+        for label, vp in [("desktop", {"width": 1366, "height": 820}), ("phone", {"width": 390, "height": 844}), ("phone-landscape", {"width": 844, "height": 390})]:
+            ctx = browser.new_context(viewport=vp, is_mobile=label != "desktop", has_touch=label != "desktop")
+            page = ctx.new_page(); page.add_init_script(MEALS); route_model(page)
+            page.goto(base + "#campaign"); page.evaluate("window.__fakePose = {kind:'press', angle:85}")
+            page.click("#btn-enter-battle"); page.click("#btn-enable-camera")
+            page.wait_for_function("!document.getElementById('btn-start').disabled", timeout=10000)
+            page.click("#btn-start"); page.wait_for_selector("#countdown", state="hidden", timeout=8000); page.wait_for_timeout(300)
+            r = page.evaluate("""() => { const b = e => document.querySelector(e).getBoundingClientRect();
+              const st = b('#stage'), bp = b('#boss-panel'), hp = b('#hp-meter'), sp = b('.boss-stage'), rc = b('#rep-count');
+              return { st, bp, hp, sp, rc }; }""")
+            st, bp, hp, sp, rc = r["st"], r["bp"], r["hp"], r["sp"], r["rc"]
+            overlap = not (bp["left"] >= st["right"] - 1 or bp["right"] <= st["left"] + 1 or bp["top"] >= st["bottom"] - 1 or bp["bottom"] <= st["top"] + 1)
+            check(f"{label}: boss panel never overlaps the camera", not overlap)
+            if label != "phone":
+                check(f"{label}: camera left, boss right", st["left"] < bp["left"])
+            check(f"{label}: HP bar above the sprite, both centred", hp["bottom"] <= sp["top"] + 2 and abs((hp["left"] + hp["right"]) / 2 - (bp["left"] + bp["right"]) / 2) < 4 and abs((sp["left"] + sp["right"]) / 2 - (bp["left"] + bp["right"]) / 2) < 4)
+            check(f"{label}: no horizontal scroll", no_hscroll(page))
+            check(f"{label}: battle controls >= 44px", not small_targets(page), json.dumps(small_targets(page)))
+            page.screenshot(path=f"{OUT}/battle-layout-{label}.png")
+            ctx.close()
 
         # icons
         ctx = browser.new_context(viewport={"width": 512, "height": 512}); page = ctx.new_page()

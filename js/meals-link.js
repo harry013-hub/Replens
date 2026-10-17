@@ -10,9 +10,13 @@ function localDate(tz) {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
-export function mealsTodayKcal(storage = globalThis.localStorage) {
+export function mealsTodayKcal(storage) {
   let state;
-  try { state = JSON.parse(storage.getItem('mealbase.v1') || 'null'); } catch { return null; }
+  try {
+    // Reading localStorage itself can throw (blocked storage / some private modes).
+    const st = storage === undefined ? globalThis.localStorage : storage;
+    state = JSON.parse(st.getItem('mealbase.v1') || 'null');
+  } catch { return null; }
   if (!state || state.version !== 1 || !Array.isArray(state.logs)) return null;
   let tz = 'UTC';
   try { tz = state.profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { /* keep UTC */ }

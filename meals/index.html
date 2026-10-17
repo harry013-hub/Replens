@@ -3,14 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#2c6a4c" />
+    <meta name="theme-color" content="#3a2a1c" />
     <meta name="description" content="MealBase: log meals, search foods and plan your week. Part of RepLens." />
-    <title>MealBase · RepLens</title>
+    <title>MealBase · Tracker-Fit</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./assets/mealbase.css" />
-    <style>body { margin: 0; background: #f4f7f3; } @media (prefers-color-scheme: dark) { body { background: #121815; } }</style>
-      <script>window.__MEALBASE_STATIC__ = { theme: "dark" };</script>
-    <style>body { background: #121815 !important; }</style>
+    <style>body { margin: 0; background: #e9dcbc; }</style>
+    <script>window.__MEALBASE_STATIC__ = Object.assign(window.__MEALBASE_STATIC__ || {}, {
+      workoutUrl: "../#replens",
+      workoutLabel: "RepLens",
+      appLinks: [
+        { label: "Main Menu", href: "../" },
+        { label: "Campaign", href: "../#campaign" },
+        { label: "RepLens", href: "../#replens" },
+        { label: "MealBase", href: "./", current: true }
+      ]
+    });</script>
+    <link rel="preload" href="../assets/fonts/Trackfi-Handdrawn.woff" as="font" type="font/woff" crossorigin />
+    <link rel="stylesheet" href="../css/mealbase-fantasy.css" />
+    <script>window.__MEALBASE_STATIC__ = Object.assign(window.__MEALBASE_STATIC__ || {}, { theme: "light" });</script>
   </head>
   <body>
     <div id="mealbase"></div>

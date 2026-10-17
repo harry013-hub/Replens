@@ -1,15 +1,27 @@
 {
-  "name": "RepLens",
-  "short_name": "RepLens",
-  "description": "Camera-based push-up and squat counter that runs on your device.",
+  "name": "Tracker-Fit",
+  "short_name": "Tracker-Fit",
+  "description": "Hand-drawn fantasy fitness game: RepLens rep counting, MealBase meals and the Skelesquat boss battle.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0B1220",
-  "theme_color": "#0B1220",
+  "background_color": "#e9dcbc",
+  "theme_color": "#3a2a1c",
   "icons": [
-    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" },
-    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
   ]
 }

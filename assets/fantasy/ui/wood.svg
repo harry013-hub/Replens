@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="70" viewBox="0 0 200 70">
+<defs><filter id="g" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.02 0.6" numOctaves="3" seed="9"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .13  0 0 0 0 .05  0 0 0 .55 -.1"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b47a45"/><stop offset=".5" stop-color="#9a6234"/><stop offset="1" stop-color="#7a4a24"/></linearGradient></defs>
+<path d="M6 6 L194.5 4.5 L196 64.5 L5 66 Z" fill="url(#f)"/>
+<path d="M6 6 L194.5 4.5 L196 64.5 L5 66 Z" fill="#000" filter="url(#g)"/>
+<path d="M14 22 C60 19 120 25 186 21 M12 47 C70 50 130 44 188 48" fill="none" stroke="#5e3718" stroke-width="1.4" opacity=".7"/>
+<path d="M30 33 C38 30 46 35 54 32 M140 36 C150 33 160 38 168 34" fill="none" stroke="#5e3718" stroke-width="1.1" opacity=".6"/>
+<circle cx="14" cy="14" r="2.6" fill="#3a2a1f"/><circle cx="186" cy="13" r="2.6" fill="#3a2a1f"/><circle cx="14" cy="57" r="2.6" fill="#3a2a1f"/><circle cx="187" cy="56" r="2.6" fill="#3a2a1f"/>
+<circle cx="13.4" cy="13.4" r="1" fill="#b7a58f"/><circle cx="185.4" cy="12.4" r="1" fill="#b7a58f"/><circle cx="13.4" cy="56.4" r="1" fill="#b7a58f"/><circle cx="186.4" cy="55.4" r="1" fill="#b7a58f"/>
+<path d="M6 6 L194.5 4.5 L196 64.5 L5 66 Z" fill="none" stroke="#24150a" stroke-width="3.6" stroke-linejoin="round"/>
+<path d="M7 5 L195.5 5.5 L195 65.5 L4 65 Z" fill="none" stroke="#24150a" stroke-width="1" opacity=".5"/>
+</svg>

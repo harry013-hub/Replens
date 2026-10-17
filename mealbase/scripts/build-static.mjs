@@ -17,7 +17,7 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(`${out}/assets`, { recursive: true });
 let html = readFileSync('public/static.html', 'utf8');
 if (theme) {
-  html = html.replace('</head>', `    <script>window.__MEALBASE_STATIC__ = { theme: ${JSON.stringify(theme)} };</script>\n    <style>body { background: ${theme === 'dark' ? '#121815' : '#f4f7f3'} !important; }</style>\n  </head>`);
+  html = html.replace('</head>', `    <script>window.__MEALBASE_STATIC__ = Object.assign(window.__MEALBASE_STATIC__ || {}, { theme: ${JSON.stringify(theme)} });</script>\n  </head>`);
 }
 writeFileSync(`${out}/index.html`, html);
 cpSync('public/favicon.svg', `${out}/favicon.svg`);

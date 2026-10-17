@@ -1,0 +1,209 @@
+/* ==========================================================================
+   Tracker-Fit skin for MealBase. Loaded after MealBase's own stylesheet; it
+   only re-points MealBase's --mb-* design tokens and restyles its existing
+   classes. No MealBase behaviour, data or markup is changed.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Trackfi Handdrawn";
+  src: url("../assets/fonts/Trackfi-Handdrawn.woff") format("woff");
+  font-display: swap;
+}
+
+html body .mb-root,
+html body .mb-root[data-theme] {
+  --ink: #2a1d12;
+  --ink-soft: #5a4128;
+  --cream: #fff4dc;
+  --gold-ink: #3a220c;
+  --red: #d63c2e;
+  --red-2: #9e2219;
+  --green: #5aa83c;
+  --font-title: "Trackfi Handdrawn", "Marker Felt", "Chalkboard SE", "Comic Sans MS", ui-rounded, system-ui, sans-serif;
+  --plaque-dark: url("../assets/fantasy/ui/plaque-dark.svg");
+  --plaque-gold: url("../assets/fantasy/ui/plaque-gold.svg");
+  --parchment: url("../assets/fantasy/ui/parchment.svg");
+  --wood-img: url("../assets/fantasy/ui/wood.svg");
+
+  --mb-bg: transparent;
+  --mb-surface: #f8ecd0;
+  --mb-surface-2: #efdcb2;
+  --mb-ink: var(--ink);
+  --mb-muted: #6b5236;
+  --mb-line: rgba(42, 29, 18, .3);
+  --mb-accent: #9e2219;
+  --mb-accent-hover: #7f1a13;
+  --mb-accent-ink: var(--cream);
+  --mb-accent-soft: #f6dc8a;
+  --mb-marker: #d63c2e;
+  --mb-info-bg: #dcebf3;
+  --mb-info-ink: #1f3a52;
+  --mb-warn-bg: #f7e2a3;
+  --mb-warn-ink: #5c3d04;
+  --mb-error-bg: #f6d2c7;
+  --mb-error-ink: #7d1a12;
+  --mb-sample-bg: #eadcf3;
+  --mb-sample-ink: #4a2a6a;
+  --mb-focus: #c9771d;
+  --mb-font: ui-rounded, "SF Pro Rounded", "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mb-radius-sm: 6px;
+  --mb-radius-md: 0;
+  --mb-shadow: none;
+  --mb-nav-height: 78px;
+  color-scheme: light;
+}
+
+html, body { background: #e9dcbc; }
+body {
+  background:
+    url("../assets/fantasy/ui/grain.svg"),
+    url("../assets/fantasy/ui/hatch-sky.svg"),
+    linear-gradient(180deg, #a9d3f1 0%, #cfe6f2 30%, #eef0dc 62%, #ecdcb5 100%) fixed;
+  background-color: #e9dcbc;
+}
+.mb-root { background: transparent; }
+
+/* headings + labels: supplied hand-drawn font; body text stays readable */
+.mb-root h1, .mb-root h2, .mb-root h3, .mb-root .mb-brand, .mb-root .mb-btn, .mb-root .mb-nav a,
+.mb-root .mb-switcher a, .mb-root .mb-label, .mb-root legend, .mb-root .mb-tally-number,
+.mb-root .mb-plan-meal-type, .mb-root .mb-segmented label, .mb-root .mb-badge,
+.mb-root .mb-section-title, .mb-root .mb-entry-name {
+  font-family: var(--font-title);
+  font-weight: 400;
+  letter-spacing: -.01em;
+}
+.mb-root h1 { font-size: clamp(1.8rem, 6.5vw, 2.4rem); }
+.mb-root h2 { font-size: 1.45rem; color: var(--red-2); }
+.mb-root h3 { font-size: 1.2rem; }
+.mb-root .mb-label, .mb-root legend { font-size: 1.05rem; color: var(--ink); }
+
+/* page title on a wooden sign */
+.mb-root .mb-page-head h1 {
+  color: var(--cream);
+  padding: 2px 16px;
+  border: solid; border-width: 14px 18px;
+  border-image: var(--wood-img) 22 24 fill / 14px 18px stretch;
+  text-shadow: 0 3px 0 rgba(36,21,10,.7);
+  transform: rotate(-1deg);
+}
+.mb-root .mb-page-head > p, .mb-root .mb-page-head .mb-muted { color: var(--ink); background: rgba(255,244,220,.75); padding: 2px 8px; border-radius: 6px; }
+
+/* parchment panels */
+.mb-root .mb-panel, .mb-root .mb-plan-meal, .mb-dialog, .mb-root .mb-empty {
+  border: solid; border-width: 24px; border-radius: 0;
+  border-image: var(--parchment) 34 fill / 24px stretch;
+  background: none;
+  padding: 0 2px;
+  box-shadow: none;
+}
+.mb-root .mb-plan-meal[data-locked="true"] { box-shadow: none; filter: drop-shadow(0 0 5px rgba(244,197,65,.95)); }
+.mb-dialog { color: var(--ink); }
+.mb-dialog::backdrop { background: rgba(31,24,20,.6); }
+.mb-dialog .mb-dialog-inner { padding: 4px; }
+
+/* plaque buttons */
+.mb-root .mb-btn, .mb-dialog .mb-btn {
+  min-height: 52px; padding: 2px 14px;
+  border: solid; border-width: 12px 14px; border-radius: 0;
+  border-image: var(--plaque-dark) 14 16 fill / 12px 14px stretch;
+  background: none; color: var(--cream);
+  font-size: 1.05rem;
+  text-shadow: 0 2px 0 rgba(0,0,0,.45);
+  transition: transform .1s ease, filter .15s ease;
+}
+.mb-root .mb-btn:hover, .mb-dialog .mb-btn:hover { background: none; filter: brightness(1.08); }
+.mb-root .mb-btn:active { transform: translateY(2px); }
+.mb-root .mb-btn-primary, .mb-dialog .mb-btn-primary {
+  border-image: var(--plaque-gold) 14 16 fill / 12px 14px stretch;
+  color: var(--gold-ink); text-shadow: 0 1px 0 rgba(255,244,200,.7);
+}
+.mb-root .mb-btn-quiet, .mb-dialog .mb-btn-quiet {
+  border: 0; border-image: none; min-height: 44px; color: var(--red-2); text-shadow: none;
+  text-decoration: underline; text-decoration-style: wavy; text-decoration-color: rgba(158,34,25,.5); text-underline-offset: 5px;
+}
+.mb-root .mb-btn-quiet:hover { background: rgba(255,244,220,.5); }
+.mb-root .mb-btn-danger, .mb-dialog .mb-btn-danger { color: #ffd2c4; }
+.mb-root .mb-btn-sm { min-height: 44px; font-size: .95rem; border-width: 10px 12px; border-image-width: 10px 12px; }
+.mb-root .mb-icon-btn { min-width: 48px; padding: 0; }
+.mb-root .mb-btn:disabled { opacity: .55; filter: grayscale(.5); }
+
+/* inputs: ink on cream, hand-inked border */
+.mb-root .mb-input, .mb-root .mb-select, .mb-root .mb-textarea, .mb-dialog .mb-input, .mb-dialog .mb-select, .mb-dialog .mb-textarea {
+  background: #fff8e8; color: var(--ink);
+  border: 2.5px solid var(--ink); border-radius: 7px 10px 6px 9px;
+  box-shadow: inset 0 2px 0 rgba(42,29,18,.12);
+}
+.mb-root .mb-check input { accent-color: var(--red-2); }
+
+/* segmented choices as little parchment tags */
+.mb-root .mb-segmented label {
+  border: 2.5px solid var(--ink); border-radius: 8px 12px 9px 11px;
+  background: #fbf0d6; color: var(--ink); font-size: 1rem;
+}
+.mb-root .mb-segmented label:has(input:checked) { background: #f6c43f; border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+
+/* app switcher → plaques that lead back to the Tracker-Fit menu */
+.mb-root .mb-switcher { background: none; border: 0; padding: 0; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.mb-root .mb-switcher a {
+  min-height: 46px; padding: 0 6px; border-radius: 0; color: var(--cream);
+  border: solid; border-width: 10px 12px; border-image: var(--plaque-dark) 14 16 fill / 10px 12px stretch;
+  text-shadow: 0 2px 0 rgba(0,0,0,.45); font-size: 1rem;
+}
+.mb-root .mb-switcher a[aria-current="page"] {
+  background: none; color: var(--gold-ink); text-shadow: 0 1px 0 rgba(255,244,200,.7);
+  border-image: var(--plaque-gold) 14 16 fill / 10px 12px stretch;
+}
+
+/* bottom / side navigation like the reference's charcoal tab bar */
+.mb-root .mb-nav {
+  background: url("../assets/fantasy/ui/hatch-dark.svg"), linear-gradient(180deg, #4a3829, #2c2119);
+  border-top: 4px solid #170f0a;
+  gap: 4px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+}
+.mb-root .mb-nav a { color: #f1e2c2; font-family: var(--mb-font); font-weight: 700; font-size: .72rem; border-radius: 0; letter-spacing: 0; }
+.mb-root .mb-nav a svg { color: #f4c541; }
+.mb-root .mb-nav a[aria-current="page"] {
+  color: var(--gold-ink); background: none;
+  border: solid; border-width: 8px 9px; border-image: var(--plaque-gold) 14 16 fill / 8px 9px stretch;
+}
+.mb-root .mb-nav a[aria-current="page"] svg { color: var(--gold-ink); }
+@media (min-width: 900px) {
+  .mb-root .mb-nav { border-top: 0; border-right: 4px solid #170f0a; padding: 24px 12px; gap: 8px; }
+  .mb-root .mb-nav .mb-brand { color: var(--cream); font-size: 1.7rem; text-shadow: 0 3px 0 rgba(0,0,0,.5); }
+  .mb-root .mb-nav a { font-family: var(--font-title); font-weight: 400; font-size: 1.15rem; min-height: 52px; }
+}
+
+/* date strip */
+.mb-root .mb-day { color: var(--ink-soft); border-radius: 8px; }
+.mb-root .mb-day strong { color: var(--ink); font-size: 1.3rem; font-weight: 800; }
+.mb-root .mb-day[aria-pressed="true"] {
+  background: none; color: var(--cream);
+  border: solid; border-width: 8px 9px; border-image: var(--plaque-dark) 14 16 fill / 8px 9px stretch;
+}
+.mb-root .mb-day[aria-pressed="true"] strong { color: var(--cream); }
+
+/* totals and nutrition details (readable font for numbers and descriptions) */
+.mb-root .mb-tally-number { font-size: 3.2rem; color: var(--ink); }
+.mb-root .mb-tally-unit { color: var(--ink-soft); }
+.mb-root .mb-macros dd, .mb-root .mb-table, .mb-root .mb-num { font-family: var(--mb-font); }
+.mb-root .mb-meal { border-top: 2px dashed var(--mb-line); }
+.mb-root .mb-entry + .mb-entry { border-top: 2px dashed var(--mb-line); }
+.mb-root .mb-list-item { border-bottom: 2px dashed var(--mb-line); }
+.mb-root .mb-list-item:hover { background: rgba(255,244,220,.55); }
+.mb-root .mb-table th, .mb-root .mb-table td { border-bottom: 2px dashed var(--mb-line); }
+.mb-root .mb-table th { font-family: var(--font-title); font-weight: 400; }
+.mb-root .mb-divider { border-top: 2px dashed var(--mb-line); }
+
+/* notices, badges, toast */
+.mb-root .mb-notice { border: 2.5px solid var(--ink); border-radius: 10px 6px 12px 8px; }
+.mb-root .mb-badge { border: 1.5px solid var(--ink); }
+.mb-toast {
+  background: none; color: var(--cream); border-radius: 0;
+  border: solid; border-width: 12px 15px; border-image: var(--plaque-dark) 14 16 fill / 12px 15px stretch;
+  font-family: var(--font-title); font-size: 1.05rem;
+}
+.mb-root .mb-spinner { border-color: rgba(42,29,18,.2); border-top-color: var(--red-2); }
+.mb-root .mb-stepper { border: 2.5px solid var(--ink); background: #fff8e8; }
+.mb-root .mb-footnote { color: var(--ink); background: rgba(255,244,220,.75); padding: 6px 10px; border-radius: 6px; }
+.mb-root a { color: var(--red-2); }
+.mb-root .mb-workout svg { color: var(--red-2); }
