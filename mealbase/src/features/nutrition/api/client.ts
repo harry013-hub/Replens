@@ -84,6 +84,8 @@ export class NutritionApiClient {
 
   // auth & profile
   config() { return this.request<ClientConfig>('GET', '/config'); }
+  /** Browser-only builds: save (or clear with null) the user's own USDA key on this device. */
+  setDeviceUsdaKey(key: string | null) { return this.request<ClientConfig>('PUT', '/device/usda-key', { key }); }
   me() { return this.request<Me>('GET', '/me'); }
   updateMe(patch: { displayName?: string; timezone?: string }) { return this.request<Me>('PATCH', '/me', patch); }
   login(email: string, password: string) { return this.request<{ profileId: string }>('POST', '/auth/login', { email, password }); }

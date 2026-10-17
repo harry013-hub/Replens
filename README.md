@@ -14,15 +14,15 @@ RepLens now has a second tab, **MealBase**. Use the **RepLens | MealBase** switc
 - **Your food log stays on this device**, in this browser's `localStorage` (key `mealbase.v1`), like RepLens history. Nothing is uploaded. Use **MealBase → Settings → Your data** to export CSV/JSON or delete it.
 - **Calories are estimates.** MealBase is a logging and planning tool, not medical nutrition advice. Starter recipes use labelled sample ingredient data until they're re-linked to USDA records (see `mealbase/README.md`).
 
-### Turning on food search (USDA API key)
+### Food search (USDA FoodData Central)
 
-Food search uses [USDA FoodData Central](https://fdc.nal.usda.gov). It needs a free API key: sign up at <https://fdc.nal.usda.gov/api-key-signup>. The key must stay secret, so it's never put in the website's files. A small server-side function (`netlify/functions/usda.mjs`) adds it to requests instead.
+Food search uses [USDA FoodData Central](https://fdc.nal.usda.gov) and works on any host, including **GitHub Pages**:
 
-- **Netlify (recommended):** deploy this repo from GitHub (not Netlify Drop; Drop doesn't run functions). Then go to **Site configuration → Environment variables**, add `USDA_API_KEY`, and redeploy.
-- **On your computer:** `USDA_API_KEY=your-key npm start`, then open <http://localhost:8080/meals/>.
-- **GitHub Pages or another static host:** MealBase works, but food search is off (static hosts can't run the function). Manual food entry, recipes and planning all still work.
+- **GitHub Pages / any static host:** MealBase calls USDA directly from your browser using USDA's public demo key (about 30 searches an hour). For more, get a free key at <https://fdc.nal.usda.gov/api-key-signup> and paste it in **MealBase → Settings → USDA food search key**. It's saved only in that browser and never put in the website's files.
+- **Netlify (optional):** if you deploy from GitHub on Netlify and set `USDA_API_KEY` in its environment variables, searches go through `netlify/functions/usda.mjs` instead, so visitors don't need their own key.
+- **On your computer:** `USDA_API_KEY=your-key npm start` uses the same function, then open <http://localhost:8080/meals/>.
 
-Without a key, search shows your own foods and clearly labelled sample foods, and **Add manually** is always available.
+**Add manually** always works, even with no connection to USDA.
 
 ### Changing MealBase
 
@@ -161,7 +161,7 @@ If tracking never appears on a particular phone, try **Settings → Compatibilit
 - The camera starts only when you tap **Enable Camera**. Only video is requested; the microphone never is.
 - Frames are processed in the page's memory and then discarded. Nothing is recorded or uploaded, and there are no analytics or third-party scripts that see frames.
 - Only **session summaries** (exercise, reps, duration, date) and preferences are saved, in `localStorage` on your device. Video, photos and landmarks are never stored. **Clear history** deletes the summaries.
-- **MealBase** keeps your food log in `localStorage` on your device too. Food searches send only the search text (or a USDA food id) to the site's own function, which forwards it to USDA FoodData Central.
+- **MealBase** keeps your food log in `localStorage` on your device too. Food searches send only the search text (or a USDA food id) to USDA FoodData Central, either directly or through the site's own function.
 - **Finish**, **Stop camera**, leaving the page, or going back to Home stops every camera track and stops inference. Switching apps or locking the phone pauses the workout, and you must tap Resume.
 
 ## 7. Files

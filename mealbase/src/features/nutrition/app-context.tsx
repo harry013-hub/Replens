@@ -9,6 +9,7 @@ import type { NutritionApiClient } from './api/client';
 export interface NutritionContextValue {
   api: NutritionApiClient;
   config: ClientConfig;
+  setConfig: (c: ClientConfig) => void;
   me: Me;
   prefs: UserPreferences;
   setPrefs: (p: UserPreferences) => void;

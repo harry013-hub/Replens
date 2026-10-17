@@ -39,6 +39,10 @@ export interface ClientConfig {
     configured: boolean;
     usingDemoKey: boolean;
     attribution: string;
+    /** server = Node server holds the key; proxy = site function holds it; direct = browser calls USDA with the user's own key or DEMO_KEY. */
+    mode?: 'server' | 'proxy' | 'direct';
+    /** direct mode: the user saved their own key on this device. */
+    deviceKeySet?: boolean;
   };
   sampleFoodsEnabled: boolean;
   workout: { configured: boolean; url: string | null; label: string };

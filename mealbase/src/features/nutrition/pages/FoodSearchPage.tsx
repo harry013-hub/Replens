@@ -120,6 +120,10 @@ export function FoodSearchPage() {
         </Notice>
       ) : null}
 
+      {config.foodProvider.configured && config.foodProvider.mode === 'direct' && config.foodProvider.usingDemoKey ? (
+        <p className="mb-hint">Searching with USDA's shared demo key (about 30 searches an hour). For more, add your own free key in <a href="#" onClick={(e) => { e.preventDefault(); navigate('/settings'); }}>Settings</a>.</p>
+      ) : null}
+
       {error ? (
         <Notice tone="error">
           {error.message}

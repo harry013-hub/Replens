@@ -9,7 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { NutritionApp } from '../features/nutrition/NutritionApp';
 import { NutritionApiClient } from '../features/nutrition/api/client';
 import { LocalBackend } from '../local/backend';
-import { RemoteUsdaProvider } from '../local/remote-provider';
+import { BrowserUsdaProvider } from '../local/browser-provider';
 import type { AppLink } from '../features/nutrition/app-context';
 import '../shared/ui/tokens.css';
 import '../shared/ui/components.css';
@@ -22,8 +22,10 @@ declare global {
 
 const cfg = window.__MEALBASE_STATIC__ ?? {};
 const proxyUrl = cfg.usdaProxyUrl === undefined ? '/.netlify/functions/usda' : cfg.usdaProxyUrl;
+let storage: Storage | null = null;
+try { storage = window.localStorage; } catch { storage = null; }
 const backend = new LocalBackend({
-  provider: proxyUrl ? new RemoteUsdaProvider(proxyUrl) : null,
+  provider: new BrowserUsdaProvider({ proxyUrl, storage }),
   workout: { url: cfg.workoutUrl === undefined ? '../' : cfg.workoutUrl, label: cfg.workoutLabel ?? 'RepLens' },
   sampleFoodsEnabled: cfg.sampleFoodsEnabled ?? true,
 });
