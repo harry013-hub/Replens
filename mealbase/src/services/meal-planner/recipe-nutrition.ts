@@ -92,7 +92,7 @@ export function computeRecipeNutrition(
     : { ...EMPTY_VALUES };
 
   const basis: RecipeNutrition['basis'] =
-    sources.size === 0 ? 'none' : sources.size > 1 ? 'mixed' : ([...sources][0] as 'usda' | 'sample' | 'manual');
+    sources.size === 0 ? 'none' : sources.size > 1 ? 'mixed' : ([...sources][0] as 'usda' | 'off' | 'sample' | 'manual');
 
   return { perServing, complete: issues.length === 0 && values.length > 0, issues, basis };
 }

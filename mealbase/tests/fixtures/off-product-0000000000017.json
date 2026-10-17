@@ -1,0 +1,15 @@
+{
+  "code": "0000000000017",
+  "status": 1,
+  "status_verbose": "product found",
+  "product": {
+    "code": "0000000000017",
+    "product_name": "Rolled Oats",
+    "brands": "Example Mills",
+    "product_quantity_unit": "g",
+    "serving_quantity": 40,
+    "serving_quantity_unit": "g",
+    "serving_size": "1/2 cup (40 g)",
+    "nutriments": { "energy-kcal_100g": 375, "proteins_100g": 12.5, "carbohydrates_100g": 67.5, "fat_100g": "7" }
+  }
+}

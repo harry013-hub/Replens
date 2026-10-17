@@ -69,7 +69,7 @@ export interface RecipeNutrition {
   complete: boolean;
   issues: string[];
   /** Where the underlying numbers came from. */
-  basis: 'usda' | 'sample' | 'manual' | 'mixed' | 'none';
+  basis: 'usda' | 'off' | 'sample' | 'manual' | 'mixed' | 'none';
 }
 
 export interface Recipe {

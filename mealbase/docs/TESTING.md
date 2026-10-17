@@ -2,7 +2,7 @@
 
 ## Automated tests (`npm test`)
 
-75 tests using Node's built-in test runner. API tests start a real MealBase server on a random port with an in-memory database and a USDA provider whose network is replaced by fixtures.
+80 tests using Node's built-in test runner. API tests start a real MealBase server on a random port with an in-memory database and a USDA provider whose network is replaced by fixtures.
 
 | Area | File | What is checked |
 |---|---|---|
@@ -22,6 +22,7 @@
 | Data isolation | `plans.test.ts` | Second account cannot read, edit, delete, log against, export or plan with the first account's data; client-sent ids ignored; session expiry reported; service-token identity mapping keeps users apart. |
 | Integration | `integration.test.ts` | Host `AuthProvider` factory; non-MealBase routes fall through; webhook signing/verification; in-page events. |
 | Browser-only mode (RepLens tab) | `local-backend.test.ts` | Same API through the in-browser backend: core flow, reload persistence, failed storage writes not saved, memory fallback, no-proxy mode, validation, export/import/reset; USDA proxy never leaks the key and validates input. |
+| Open Food Facts | `openfoodfacts.test.ts` | Nutrient mapping (kcal, kJ fallback, string numbers, bad values rejected), per 100 g vs 100 ml, servings only in the matching unit, identifying header and no key sent, rate-limit / outage / not-found errors, full static-site flow (search → details → log), cached product during outage, USDA function still preferred when present. |
 | Core flow | `core-flow.test.ts` | Search → portion → log → total → next week's plan → swap → log as eaten → history & reopened saved plan. |
 
 Mutation check performed during development: disabling the duplicate-log guard or the locked-slot check makes the corresponding tests fail.

@@ -8,6 +8,7 @@ import { useNutrition } from '../app-context';
 import { errorMessage, MEAL_LABELS, useAsync } from '../hooks';
 import type { RecipeEditorInput } from '../api/client';
 import { basisBadge } from './PlanMeal';
+import { SOURCE_BADGE } from '../source-labels';
 
 interface IngredientDraft { name: string; quantity: string; unit: string; foodId: string | null; foodLabel: string | null }
 interface Draft {
@@ -253,7 +254,7 @@ function FoodLinker({ initial, onPick }: { initial: string; onPick: (foodId: str
             }
           }}>
             <span>{r.name}{r.brand ? <span className="mb-muted"> · {r.brand}</span> : null}</span>
-            {r.isSample ? <span className="mb-badge mb-badge-sample">Sample</span> : <span className="mb-badge">{r.source === 'manual' ? 'Yours' : 'USDA'}</span>}
+            {r.isSample ? <span className="mb-badge mb-badge-sample">Sample</span> : <span className="mb-badge">{SOURCE_BADGE[r.source]}</span>}
           </button>
         ))}
       </div>

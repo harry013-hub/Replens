@@ -73,7 +73,7 @@ export const importSchema = z.object({
                 instructions: z.array(z.string().max(1000)).max(30),
                 ingredients: z.array(z.object({ name: z.string().max(200), quantity: z.number().finite().gt(0).nullable(), unit: z.string().max(30) })).max(60),
                 nutritionPerServing: nutrientValues,
-                nutritionBasis: z.enum(['usda', 'sample', 'manual', 'mixed', 'none']),
+                nutritionBasis: z.enum(['usda', 'off', 'sample', 'manual', 'mixed', 'none']),
                 nutritionComplete: z.boolean(),
               }),
             }),

@@ -29,7 +29,7 @@ export interface ProviderSearchPage {
 }
 
 export interface FoodProvider {
-  readonly id: 'usda';
+  readonly id: 'usda' | 'off';
   readonly label: string;
   readonly attribution: string;
   isConfigured(): boolean;

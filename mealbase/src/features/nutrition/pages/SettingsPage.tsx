@@ -79,10 +79,10 @@ export function SettingsPage() {
         <dl className="mb-stack mb-small">
           <div>
             <dt><strong>Food database</strong></dt>
-            <dd>{config.foodProvider.mode === 'direct'
-              ? (config.foodProvider.deviceKeySet ? 'USDA FoodData Central, using your own key saved on this device.' : 'USDA FoodData Central, using the shared demo key (about 30 searches an hour).')
+            <dd>{config.foodProvider.mode === 'browser'
+              ? `${config.foodProvider.label ?? 'Open Food Facts'}, searched directly from this browser (free, no key needed).`
               : config.foodProvider.configured
-                ? `USDA FoodData Central connected${config.foodProvider.usingDemoKey ? ' with the shared DEMO_KEY (very low limits — set your own key)' : ''}.`
+                ? `${config.foodProvider.label ?? 'USDA FoodData Central'} connected${config.foodProvider.usingDemoKey ? ' with the shared DEMO_KEY (very low limits — set your own key)' : ''}.`
                 : 'Not connected. The server needs a USDA_API_KEY. Manual entry works without it.'}</dd>
           </div>
           <div>
@@ -94,8 +94,6 @@ export function SettingsPage() {
           ) : null}
         </dl>
       </section>
-
-      {config.foodProvider.mode === 'direct' ? <DeviceKeySection /> : null}
 
       <DataSection />
 
@@ -207,38 +205,3 @@ function DataSection() {
   );
 }
 
-function DeviceKeySection() {
-  const { api, config, setConfig, toast } = useNutrition();
-  const [key, setKey] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const save = async (value: string | null) => {
-    setBusy(true);
-    setError(null);
-    try {
-      setConfig(await api.setDeviceUsdaKey(value));
-      setKey('');
-      toast(value ? 'USDA key saved on this device' : 'USDA key removed');
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <section className="mb-panel mb-stack" aria-labelledby="mb-usda-key">
-      <h2 id="mb-usda-key">USDA food search key</h2>
-      <p className="mb-small">
-        Food search works right away with USDA's shared demo key, which allows about 30 searches an hour. For more, get a free key at{' '}
-        <a href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noreferrer">fdc.nal.usda.gov/api-key-signup</a> and paste it here.
-      </p>
-      <p className="mb-hint">The key is saved only in this browser on this device and sent only to USDA. It isn't part of the website or your exports. Anyone using this browser could see it.</p>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      <Field label="Your USDA key">{(id) => <input id={id} className="mb-input" autoComplete="off" spellCheck={false} placeholder={config.foodProvider.deviceKeySet ? 'A key is saved' : 'Paste your key'} value={key} onChange={(e) => setKey(e.target.value)} />}</Field>
-      <div className="mb-row">
-        <Button variant="primary" busy={busy} disabled={!key.trim()} onClick={() => save(key.trim())}>Save key</Button>
-        {config.foodProvider.deviceKeySet ? <Button busy={busy} onClick={() => save(null)}>Remove key</Button> : null}
-      </div>
-    </section>
-  );
-}

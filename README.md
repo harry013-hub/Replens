@@ -14,15 +14,15 @@ RepLens now has a second tab, **MealBase**. Use the **RepLens | MealBase** switc
 - **Your food log stays on this device**, in this browser's `localStorage` (key `mealbase.v1`), like RepLens history. Nothing is uploaded. Use **MealBase → Settings → Your data** to export CSV/JSON or delete it.
 - **Calories are estimates.** MealBase is a logging and planning tool, not medical nutrition advice. Starter recipes use labelled sample ingredient data until they're re-linked to USDA records (see `mealbase/README.md`).
 
-### Food search (USDA FoodData Central)
+### Food search
 
-Food search uses [USDA FoodData Central](https://fdc.nal.usda.gov) and works on any host, including **GitHub Pages**:
+Food search works on any host, including **GitHub Pages**, with nothing to set up:
 
-- **GitHub Pages / any static host:** MealBase calls USDA directly from your browser using USDA's public demo key (about 30 searches an hour). For more, get a free key at <https://fdc.nal.usda.gov/api-key-signup> and paste it in **MealBase → Settings → USDA food search key**. It's saved only in that browser and never put in the website's files.
-- **Netlify (optional):** if you deploy from GitHub on Netlify and set `USDA_API_KEY` in its environment variables, searches go through `netlify/functions/usda.mjs` instead, so visitors don't need their own key.
-- **On your computer:** `USDA_API_KEY=your-key npm start` uses the same function, then open <http://localhost:8080/meals/>.
+- **GitHub Pages / any static host:** MealBase searches **[Open Food Facts](https://world.openfoodfacts.org)** directly from your browser. It's a free, community-made database (no key needed), strongest for packaged and branded foods, and limited to about 10 searches a minute. Plain foods like fruit or raw meat are covered by the bundled generic foods list, and **Add manually** always works.
+- **Netlify (optional):** if the site is deployed on Netlify from GitHub with `USDA_API_KEY` set in its environment variables, MealBase uses **USDA FoodData Central** through `netlify/functions/usda.mjs` instead. USDA's API can't be called straight from a web page, which is why it needs that function.
+- **On your computer:** `USDA_API_KEY=your-key npm start` uses USDA through the same function; without a key it uses Open Food Facts.
 
-**Add manually** always works, even with no connection to USDA.
+Food data: Open Food Facts contributors (Open Database License) · U.S. Department of Agriculture, FoodData Central (public domain).
 
 ### Changing MealBase
 
@@ -161,7 +161,7 @@ If tracking never appears on a particular phone, try **Settings → Compatibilit
 - The camera starts only when you tap **Enable Camera**. Only video is requested; the microphone never is.
 - Frames are processed in the page's memory and then discarded. Nothing is recorded or uploaded, and there are no analytics or third-party scripts that see frames.
 - Only **session summaries** (exercise, reps, duration, date) and preferences are saved, in `localStorage` on your device. Video, photos and landmarks are never stored. **Clear history** deletes the summaries.
-- **MealBase** keeps your food log in `localStorage` on your device too. Food searches send only the search text (or a USDA food id) to USDA FoodData Central, either directly or through the site's own function.
+- **MealBase** keeps your food log in `localStorage` on your device too. Food searches send only the search text (or a product id) to Open Food Facts, or to USDA FoodData Central through the site's own function when it's set up.
 - **Finish**, **Stop camera**, leaving the page, or going back to Home stops every camera track and stops inference. Switching apps or locking the phone pauses the workout, and you must tap Resume.
 
 ## 7. Files

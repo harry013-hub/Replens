@@ -108,15 +108,43 @@ try:
         check("no horizontal scroll on RepLens home", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
         check("no JS errors", not errors, "; ".join(errors))
 
-        # Plain static host with no USDA function (e.g. GitHub Pages)
-        plain = browser.new_page(viewport={"width": 390, "height": 844})
+        # Plain static host with no USDA function (e.g. GitHub Pages) → Open Food Facts.
+        # The real API isn't reachable from CI, so its responses are served from fixtures.
+        FIX = os.path.join(ROOT, "mealbase", "tests", "fixtures")
+        off_calls = []
+        def off_route(route):
+            url = route.request.url
+            off_calls.append({"url": url, "xua": route.request.headers.get("x-user-agent", "")})
+            if "/cgi/search.pl" in url:
+                body = open(os.path.join(FIX, "off-search-oat.json")).read()
+            elif "/api/v2/product/0000000000017.json" in url:
+                body = open(os.path.join(FIX, "off-product-0000000000017.json")).read()
+            else:
+                return route.fulfill(status=404, body='{"status":0}', headers={"Access-Control-Allow-Origin": "*"})
+            route.fulfill(status=200, body=body, headers={"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"})
+        plain_ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        plain_ctx.route("https://world.openfoodfacts.org/**", off_route)
+        plain = plain_ctx.new_page()
+        plain_errors = []
+        plain.on("pageerror", lambda e: plain_errors.append(str(e)))
         plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/search")
-        expect(plain.get_by_text(re.compile("shared demo key"))).to_be_visible()
-        check("without the proxy, search uses USDA directly with the demo key", plain.get_by_text("Food database search isn't connected").count() == 0)
-        check("manual entry is still offered", plain.get_by_role("button", name="Add manually").is_visible())
-        plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/settings")
-        expect(plain.get_by_role("heading", name="USDA food search key")).to_be_visible()
-        check("settings let you add your own key on this device", True)
+        plain.get_by_role("searchbox").fill("oat")
+        plain.get_by_role("button", name="Search", exact=True).click()
+        expect(plain.get_by_role("heading", name="Open Food Facts")).to_be_visible()
+        check("GitHub Pages mode searches Open Food Facts", plain.get_by_role("button", name=re.compile("^Rolled Oats")).is_visible())
+        check("identifying X-User-Agent sent, no key", bool(off_calls) and "RepLens-MealBase" in off_calls[0]["xua"] and "api_key" not in off_calls[0]["url"])
+        plain.get_by_role("button", name=re.compile("^Rolled Oats")).click()
+        expect(plain.get_by_role("heading", name="Rolled Oats")).to_be_visible()
+        plain.get_by_label("Unit").select_option(label="1 serving (1/2 cup (40 g)) (40 g)")
+        plain.get_by_label("Amount").fill("1")
+        plain.get_by_role("button", name=re.compile("^Add to ")).click()
+        expect(plain.get_by_role("status").filter(has_text="Added Rolled Oats")).to_be_visible()
+        plain.goto(f"http://127.0.0.1:{plain_port}/meals/#/")
+        expect(plain.locator(".mb-tally-number")).to_contain_text("150")
+        check("Open Food Facts portion logged with correct calories", True)
+        plain.screenshot(path=os.path.join(OUT, "mb-05-off-today.png"), full_page=True)
+        check("manual entry is still offered", True)
+        check("no JS errors on the static host", not plain_errors, "; ".join(plain_errors))
         browser.close()
 finally:
     for pr in procs:

@@ -35,14 +35,14 @@ export interface ClientConfig {
   apiVersion: 'v1';
   authMode: 'local' | 'accounts';
   foodProvider: {
-    id: 'usda';
+    id: 'usda' | 'off';
+    /** Human name of the food database, e.g. "USDA FoodData Central" or "Open Food Facts". */
+    label?: string;
     configured: boolean;
     usingDemoKey: boolean;
     attribution: string;
-    /** server = Node server holds the key; proxy = site function holds it; direct = browser calls USDA with the user's own key or DEMO_KEY. */
-    mode?: 'server' | 'proxy' | 'direct';
-    /** direct mode: the user saved their own key on this device. */
-    deviceKeySet?: boolean;
+    /** server = Node server calls the database; proxy = the site's function does; browser = the browser calls it directly. */
+    mode?: 'server' | 'proxy' | 'browser';
   };
   sampleFoodsEnabled: boolean;
   workout: { configured: boolean; url: string | null; label: string };
@@ -73,7 +73,7 @@ export interface FoodSearchResult {
   ref: string;
   name: string;
   brand: string | null;
-  source: 'usda' | 'manual' | 'sample';
+  source: 'usda' | 'off' | 'manual' | 'sample';
   sourceLabel: string;
   dataType: string | null;
   /** Preview values for the stated reference, when the provider included them. */
@@ -86,7 +86,8 @@ export interface FoodSearchResponse {
   page: number;
   totalPages: number | null;
   provider: {
-    id: 'usda';
+    id: 'usda' | 'off';
+    label?: string;
     status: 'ok' | 'not_configured' | 'rate_limited' | 'unavailable' | 'error';
     message: string | null;
     attribution: string;

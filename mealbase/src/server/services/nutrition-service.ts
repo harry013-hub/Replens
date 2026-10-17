@@ -16,6 +16,7 @@ import type { EventSink } from './events';
 
 const SOURCE_LABEL: Record<Food['source'], string> = {
   usda: 'USDA FoodData Central',
+  off: 'Open Food Facts',
   manual: 'Entered by you',
   sample: 'Sample data (not from USDA)',
 };

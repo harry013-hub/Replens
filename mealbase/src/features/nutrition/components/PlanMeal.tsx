@@ -13,6 +13,7 @@ const STEP = 0.25;
 export function basisBadge(basis: MealPlanItem['recipe']['nutritionBasis']) {
   if (basis === 'sample' || basis === 'mixed') return <span className="mb-badge mb-badge-sample">Sample nutrition data</span>;
   if (basis === 'manual') return <span className="mb-badge">Entered by you</span>;
+  if (basis === 'off') return <span className="mb-badge">Open Food Facts data</span>;
   if (basis === 'none') return <span className="mb-badge mb-badge-warn">No nutrition data</span>;
   return null;
 }
